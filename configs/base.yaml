@@ -1,0 +1,64 @@
+# Main settings for the pipeline. Paths are relative to the project folder.
+# Change values here rather than inside the code.
+
+data:
+  raw_file: data/raw/accepted_2007_to_2018Q4.csv.gz
+  processed_dir: data/processed
+  artifacts_dir: artifacts
+  reports_dir: reports
+  # Set to a number like 0.2 to develop on a 20% sample (kept stratified by month and outcome).
+  sample_frac: null
+  random_state: 42
+
+population:
+  # 36-month loans issued 2012-2015. Every one of these had reached its end date by the
+  # end of 2018, so (almost) every outcome is known when the data snapshot was taken.
+  term_months: 36
+  issue_start: "2012-01-01"
+  issue_end: "2015-12-31"
+  good_statuses: ["Fully Paid"]
+  bad_statuses: ["Charged Off", "Default"]
+  # Joint applications only started in late 2015 and have extra fields, so they are left out.
+  application_type: "Individual"
+
+splits:
+  # Train on older loans, tune on the next year, keep the last year untouched for the final test.
+  train_end: "2013-12-31"
+  validation_end: "2014-12-31"
+
+scorecard:
+  n_bins: 8              # starting number of bins for each numeric feature
+  min_bin_share: 0.05    # bins smaller than 5% of loans get merged with a neighbour
+  min_iv: 0.02           # drop features with almost no predictive power
+  max_corr: 0.70         # of two highly correlated features, keep the one with higher IV
+  C: 1.0                 # inverse regularisation strength for the logistic regression
+  base_score: 600        # score given at base_odds
+  base_odds: 20          # good:bad odds at base_score
+  pdo: 20                # points needed to double the odds
+
+boosting:
+  # Small grid only. The validation year picks the winner.
+  grid:
+    - {learning_rate: 0.05, max_leaf_nodes: 15, min_samples_leaf: 200}
+    - {learning_rate: 0.05, max_leaf_nodes: 31, min_samples_leaf: 200}
+    - {learning_rate: 0.03, max_leaf_nodes: 31, min_samples_leaf: 500}
+  max_iter: 600
+
+policy:
+  version: "1.0"
+  # Risk bands by predicted probability of default (upper limits).
+  bands: {A: 0.06, B: 0.10, C: 0.15, D: 0.22, E: 1.00}
+  approve_max_pd: 0.12   # approve automatically at or below this PD
+  decline_min_pd: 0.25   # decline at or above this PD; anything in between goes to a person
+
+pricing:
+  # Illustrative assumptions, not a commercial pricing model.
+  funding_cost: 0.04
+  operating_cost: 0.02
+  target_margin: 0.03
+  lgd_override: null     # if null, LGD is estimated from charged-off loans in the training years
+
+monitoring:
+  psi_investigate: 0.10
+  psi_action: 0.25
+  psi_bins: 10

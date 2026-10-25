@@ -1,0 +1,29 @@
+# Loan data never goes in the repository
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Trained models are rebuilt with the pipeline
+artifacts/*
+!artifacts/.gitkeep
+
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+.env
+.DS_Store
+.ipynb_checkpoints/
+.streamlit/secrets.toml
+
+# IDE / editor
+.idea/
+.vscode/
+
+# Test and coverage files
+.coverage
+htmlcov/
+*.log
