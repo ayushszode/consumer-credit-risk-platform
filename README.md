@@ -4,6 +4,8 @@
 
 ![Consumer Credit Risk Platform](images/cover.png)
 
+**Live demo:** [ayushszode-credit-risk.streamlit.app](https://ayushszode-credit-risk.streamlit.app) (runs on synthetic data until the full LendingClub results are added; the app says so on every page)
+
 End-to-end consumer credit risk project using **Python, SQL and scikit-learn** on public LendingClub
 loan data. It goes from a raw loan file to a lending decision: an explainable scorecard, a challenger
 model, approve / refer / decline cut-offs, expected loss, monitoring, and a small API and app to score

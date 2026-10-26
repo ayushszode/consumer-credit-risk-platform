@@ -69,6 +69,13 @@ if info.get("synthetic"):
 
 pct = lambda v: f"{v:.1%}"  # noqa: E731
 
+
+def _show(v) -> str:
+    """Applicant values without trailing decimals (677.0 -> 677, 31.5 -> 31.5)."""
+    if isinstance(v, (int, float)):
+        return f"{v:,.0f}" if float(v).is_integer() else f"{v:,.1f}"
+    return str(v)
+
 # ---------------------------------------------------------------- score
 if page == "Score an applicant":
     st.header("Score an applicant")
@@ -105,15 +112,15 @@ if page == "Score an applicant":
             st.error(f"Couldn't score this applicant: {exc}")
             st.stop()
         c1, c2, c3 = st.columns(3)
-        c1.metric("Probability of default", pct(r["probability_of_default"]))
+        c1.metric("Default risk", f"{r['probability_of_default']:.1%}")
         c2.metric("Risk band", r["risk_band"])
-        c3.metric("Scorecard points", f"{r['scorecard_points']:.0f}")
+        c3.metric("Points", f"{r['scorecard_points']:.0f}")
         outcome = {"approve": st.success, "refer": st.warning, "decline": st.error}[r["policy_outcome"]]
         outcome(f"Policy outcome: **{r['policy_outcome']}**")
         st.subheader("Main reasons risk is higher")
         if r["reason_codes"]:
-            st.table(pd.DataFrame([{"Factor": FEATURE_LABELS.get(x["feature"], x["feature"]), "Applicant": x["value"],
-                                    **({"Points below best": x["points_below_best"]} if "points_below_best" in x else
+            st.table(pd.DataFrame([{"Factor": FEATURE_LABELS.get(x["feature"], x["feature"]), "Applicant": _show(x["value"]),
+                                    **({"Points below best": f"{x['points_below_best']:.0f}"} if "points_below_best" in x else
                                        {"PD reduction if typical": pct(x["pd_reduction_if_typical"])})}
                                    for x in r["reason_codes"]]))
         else:
