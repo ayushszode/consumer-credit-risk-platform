@@ -41,6 +41,17 @@ def summary() -> dict:
     return json.loads((RESULTS / "summary.json").read_text())
 
 
+@st.cache_resource(show_spinner=False)
+def train_demo_model() -> None:
+    """No trained model yet (e.g. a fresh online deployment): build one on synthetic data."""
+    from credit_risk.pipeline import run
+    run(synthetic=True, engine="pandas")
+
+
+if not (ROOT / "artifacts" / "model_bundle.joblib").exists() or not (RESULTS / "summary.json").exists():
+    with st.spinner("First start: training the demo model on synthetic data. This takes about a minute..."):
+        train_demo_model()
+
 try:
     bundle, info = get_bundle(), summary()
 except FileNotFoundError:
