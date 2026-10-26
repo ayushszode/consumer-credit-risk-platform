@@ -210,9 +210,9 @@ See [`START_HERE.md`](START_HERE.md) for the same steps one at a time.
 
 ## How this was made
 
-I built this with help from an AI assistant (Claude), which wrote a good part of the code and tests
-with me. I set the scope, reviewed the code, ran the pipeline myself and checked every number in
-this README against the output files.
+I built this with help from an AI assistant (Claude), which wrote a good part of the code, tests and
+documentation with me. Every number added to this README comes straight from the pipeline's output
+files in `reports/results/`.
 
 ## Skills demonstrated
 

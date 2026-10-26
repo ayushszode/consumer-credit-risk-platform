@@ -1,8 +1,7 @@
 # Model development
 
-This note explains how the data, features and models were built. The numbers from each run are in
-[`results.md`](results.md) and the CSV files in [`results/`](results/); this page explains how to
-read them.
+This note explains how the data, features and models were built. The numbers from each run are written
+to `reports/results.md` and the CSV files in `reports/results/`; this page explains how to read them.
 
 ## 1. Data
 
