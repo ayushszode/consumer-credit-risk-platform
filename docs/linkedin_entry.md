@@ -54,5 +54,6 @@ about people who were turned down, and it wouldn't transfer to UK lending as it 
 Results from the full run are coming next. Happy to talk it through with anyone working in
 credit risk or pricing.
 
-https://github.com/ayushszode/consumer-credit-risk-platform
+Code: https://github.com/ayushszode/consumer-credit-risk-platform
+Live demo: https://ayushszode-credit-risk.streamlit.app
 ```
