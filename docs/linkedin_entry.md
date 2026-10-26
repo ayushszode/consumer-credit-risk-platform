@@ -51,8 +51,8 @@ was given leaked into the model, and testing on a later year instead of a random
 I've also written up the limits. It's US data and only covers accepted loans, so it says nothing
 about people who were turned down, and it wouldn't transfer to UK lending as it is.
 
-I built it with help from an AI assistant. Results from the full run are coming next. Happy to talk
-it through with anyone working in credit risk or pricing.
+Results from the full run are coming next. Happy to talk it through with anyone working in
+credit risk or pricing.
 
 https://github.com/ayushszode/consumer-credit-risk-platform
 ```

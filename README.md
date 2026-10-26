@@ -214,12 +214,6 @@ See [`START_HERE.md`](START_HERE.md) for the same steps one at a time.
 - Check outcomes across groups, carefully, using the proxies available
 - Try the same pipeline on UK data if a suitable public dataset becomes available
 
-## How this was made
-
-I built this with help from an AI assistant (Claude), which wrote a good part of the code, tests and
-documentation with me. Every number added to this README comes straight from the pipeline's output
-files in `reports/results/`.
-
 ## Skills demonstrated
 
 **Credit Risk | Scorecards | Python | SQL | DuckDB | scikit-learn | Logistic Regression | Gradient

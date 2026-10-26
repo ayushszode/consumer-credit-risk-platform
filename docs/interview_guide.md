@@ -95,8 +95,3 @@ model identification, governance, development, independent validation and risk m
 Consumer Duty is about good customer outcomes, including clear explanations and fair value. I mapped
 the project against both in `reports/governance_mapping.md`, including what is missing, such as
 independent validation and an affordability check.
-
-## If asked "did you use AI?"
-
-Be straightforward: you used an AI assistant to help write code and documentation, and you made
-sure you understand and can explain every part, which is why you can answer these questions.
