@@ -222,5 +222,5 @@ Testing | GitHub Actions**
 
 ---
 
-Ayush Sanjay Zode · [LinkedIn](https://www.linkedin.com/in/ayush-zode-b72020321) ·
+Ayush Sanjay Zode · [LinkedIn](https://www.linkedin.com/in/ayushsanjayzode) ·
 [Portfolio](https://ayushszode-portfolio-nm22.vercel.app/) · [GitHub](https://github.com/ayushszode)
