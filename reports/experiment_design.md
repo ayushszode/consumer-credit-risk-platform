@@ -40,7 +40,19 @@ Its output is labelled SIMULATED and should only be used to check the code, not 
 
 ## Findings from the full run
 
-<!-- Fill from results:
-     - the five groups from offline_policy_comparison.csv
-     - required loans per arm
-     - one sentence on whether the challenger looks worth a live test -->
+Offline comparison on 2015 loans, with the challenger (scorecard) approving the same number of loans
+as the champion (boosting): 147,107 each, 52.0% of loans.
+
+| Group | Loans | Observed bad rate |
+| --- | --- | --- |
+| Approved by the champion | 147,107 | 8.5% |
+| Approved by the challenger | 147,107 | 9.1% |
+| Approved by both | 124,073 | 7.7% |
+| Only the champion | 23,034 | 12.8% |
+| Only the challenger | 23,034 | 16.8% |
+
+The two models agree on 84% of approvals; the loans only the champion approves default much less
+often than those only the challenger approves (12.8% against 16.8%). Detecting a 1-point difference in
+bad rate in a live test needs about 12,849 loans per arm. Offline evidence already favours the
+champion, so a live test would mainly check that the gain holds on applicants LendingClub declined,
+who are not in this data.

@@ -51,15 +51,17 @@ def _md_table(df: pd.DataFrame, floatfmt: str = "{:.3f}") -> str:
 def choose_champion(metrics: dict, paired: dict, cal: dict) -> tuple[str, str]:
     """Documented rule: keep the scorecard unless boosting is clearly better AND still well calibrated.
 
-    'Clearly better' = test AUC higher by at least 0.01 with the bootstrap interval above zero.
-    'Well calibrated' = calibration slope between 0.8 and 1.2 on the test year.
+    Judged on the VALIDATION year (2014), so the test year (2015) stays untouched for the final report.
+    'Clearly better' = validation AUC higher by at least 0.01 with the paired bootstrap interval above zero.
+    'Well calibrated' = calibration slope between 0.8 and 1.2 on the validation year.
     """
     gain, lo = paired["auc_difference"], paired["ci_low"]
     slope = cal["gbm"]["calibration_slope"]
     if gain >= 0.01 and lo > 0 and 0.8 <= slope <= 1.2:
-        return "gbm", (f"Gradient boosting improved test AUC by {gain:.3f} (95% CI {lo:.3f} to {paired['ci_high']:.3f}) "
-                       f"and stayed calibrated (slope {slope:.2f}), which outweighs the loss of simplicity.")
-    return "scorecard", (f"The scorecard was kept: boosting changed test AUC by {gain:+.3f} "
+        return "gbm", (f"On the 2014 validation year, gradient boosting improved AUC by {gain:.3f} "
+                       f"(95% CI {lo:.3f} to {paired['ci_high']:.3f}) and stayed calibrated (slope {slope:.2f}), "
+                       "which outweighs the loss of simplicity.")
+    return "scorecard", (f"The scorecard was kept: on the 2014 validation year boosting changed AUC by {gain:+.3f} "
                          f"(95% CI {lo:.3f} to {paired['ci_high']:.3f}; calibration slope {slope:.2f}). "
                          "That gain is not large or certain enough to give up a model whose every point can be explained.")
 
@@ -125,7 +127,7 @@ def run(config_path=None, synthetic=False, sample_frac=None, engine="auto", n_sy
                 **{name: m.predict_proba(df[MODEL_FEATURES])[:, 1] for name, m in extra.items()}}
 
     # 4. Evaluation on the same loans for every model
-    metric_rows, cal_tables, cal_stats = [], {}, {}
+    metric_rows, cal_tables, cal_stats, val_cal = [], {}, {}, {}
     for split_name, df in [("validation", valid), ("test", test)]:
         sc_ = scores(df)
         for m, p in sc_.items():
@@ -136,15 +138,20 @@ def run(config_path=None, synthetic=False, sample_frac=None, engine="auto", n_sy
             if split_name == "test":
                 cal_tables[m] = evaluate.calibration_table(df["bad"], p)
                 cal_stats[m] = evaluate.calibration_slope_intercept(df["bad"], p)
+            if split_name == "validation":
+                val_cal[m] = evaluate.calibration_slope_intercept(df["bad"], p)
         if split_name == "test":
             test_scores = sc_
+        if split_name == "validation":
+            val_scores = sc_
     metrics = pd.DataFrame(metric_rows)
     paired = evaluate.paired_auc_difference(test["bad"], test_scores["scorecard"], test_scores["gbm"], seed=seed)
+    paired_val = evaluate.paired_auc_difference(valid["bad"], val_scores["scorecard"], val_scores["gbm"], seed=seed)
     extra_vs_scorecard = pd.DataFrame([
         {"model": name, **evaluate.paired_auc_difference(test["bad"], test_scores["scorecard"], test_scores[name], seed=seed),
          "calibration_slope": cal_stats[name]["calibration_slope"]}
         for name in extra], columns=["model", "auc_difference", "ci_low", "ci_high", "calibration_slope"])
-    champion, reason = choose_champion(metrics, paired, cal_stats)
+    champion, reason = choose_champion(metrics, paired_val, val_cal)  # decided on 2014; 2015 only reports
     test = test.assign(pd_scorecard=test_scores["scorecard"], pd_gbm=test_scores["gbm"],
                        pd_champion=test_scores[champion], score_points=sc.score(test))
     log.info("Champion: %s", champion)
@@ -220,7 +227,7 @@ def run(config_path=None, synthetic=False, sample_frac=None, engine="auto", n_sy
     for name, t in tables.items():
         t.to_csv(res_dir / f"{name}.csv", index=False)
     summary = {"run_label": run_label, "synthetic": synthetic, "engine": engine_used, "model_version": bundle["model_version"],
-               "champion": champion, "champion_reason": reason, "paired_auc_test": paired, "lgd_ead": lgd_ead,
+               "champion": champion, "champion_reason": reason, "paired_auc_validation": paired_val, "paired_auc_test": paired, "lgd_ead": lgd_ead,
                "extra_challengers": extra_status.to_dict(orient="records"),
                "extra_challengers_vs_scorecard_test": extra_vs_scorecard.to_dict(orient="records"),
                "expected_loss_pct_approved_test": el_point, "approve_share_test": float(share),

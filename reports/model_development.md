@@ -113,11 +113,14 @@ AUC difference against the scorecard with a paired bootstrap interval, and their
 
 ## 5. Choosing the champion
 
-The rule was set before the test year was scored:
+The rule was set in advance and is judged on the 2014 validation year, so 2015 stays untouched:
 
-> Use boosting only if its test AUC is at least 0.01 higher than the scorecard's, the 95% confidence
-> interval for that difference (paired bootstrap, same loans) is above zero, and its calibration slope
-> is between 0.8 and 1.2. Otherwise keep the scorecard.
+> Use boosting only if its validation AUC is at least 0.01 higher than the scorecard's, the 95%
+> confidence interval for that difference (paired bootstrap, same loans) is above zero, and its
+> calibration slope is between 0.8 and 1.2. Otherwise keep the scorecard.
+
+(The first real run judged this on 2015; it was moved to 2014 straight after, before anything was
+published. The decision was the same either way: see `decision_log.md`.)
 
 The rule leans towards the scorecard on purpose. It is simpler to explain, the points can be
 checked by hand, and reason codes come straight from it. A small, uncertain gain in AUC is not worth
@@ -125,9 +128,25 @@ losing that.
 
 ## Findings from the full run
 
-<!-- Fill from results.md after the real run:
-     - population size and how many loans each rule removed
-     - bad rate in each split, and whether it moves between years
-     - which features the scorecard kept and dropped, and the five with the highest IV
-     - chosen boosting settings and number of iterations
-     - test AUC / Gini / KS for all three models, and the champion decision -->
+Run of 5 November 2026 on `accepted_2007_to_2018Q4.csv.gz` (all numbers from `results/`).
+
+- **Population.** 2,260,668 loans in the file, 589,249 eligible. Removed: 1,020,119 issued outside
+  2012-2015, 650,914 with a 60-month term, 239 joint applications and 147 with no final outcome.
+  No loans failed the key-field or policy-code rules.
+- **Bad rate rises every year:** 12.7% (2012-13), 13.7% (2014), 14.9% (2015). This matters for
+  calibration (below).
+- **Scorecard:** 13 of 28 candidate features kept. Highest IV: `fico_mid` 0.124 (the only "medium"),
+  then `annual_inc` 0.093, `tot_cur_bal` 0.054, `total_rev_hi_lim` 0.045 and `acc_open_past_24mths`
+  0.045. `bc_util` and `inq_last_6mths` were dropped for correlation 0.76 with a stronger feature;
+  `purpose`, `loan_amnt`, `emp_length_years` and `verification_status` fell below IV 0.02.
+- **FICO points rise steadily**, from 36 (below 667) to 58 (732 and above), as they should.
+- **Boosting:** the 2014 grid picked learning rate 0.03, 31 leaves, at least 500 loans per leaf,
+  stopping at 328 iterations (validation AUC 0.678). Most important features by permutation:
+  `fico_mid`, `acc_open_past_24mths`, `annual_inc`, `loan_to_income`, `purpose`. Purpose matters to
+  boosting even though its IV alone was too low for the scorecard.
+- **2015 test:** scorecard AUC 0.665 (Gini 0.330, KS 0.238), boosting 0.682 (Gini 0.363, KS 0.264),
+  benchmark with LendingClub's grade and rate 0.693.
+- **Champion: gradient boosting.** On 2014 it beat the scorecard by 0.020 AUC (95% CI 0.018 to 0.022)
+  with calibration slope 0.97, which passes the rule. On 2015 the gain held at 0.017 (0.015 to 0.018).
+- **Calibration level drifts:** slopes stay near 1, but in 2015 the mean predicted PD is 13.2% against
+  an observed 14.9%. Ranking is fine; the level needs recalibrating before cut-offs are used live.

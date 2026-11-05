@@ -1,0 +1,39 @@
+{
+  "run_label": "LendingClub accepted loans 2007-2018Q4",
+  "synthetic": false,
+  "engine": "pandas",
+  "model_version": "gbm-20261105-1717",
+  "champion": "gbm",
+  "champion_reason": "On the 2014 validation year, gradient boosting improved AUC by 0.020 (95% CI 0.018 to 0.022) and stayed calibrated (slope 0.97), which outweighs the loss of simplicity.",
+  "paired_auc_validation": {
+    "auc_difference": 0.02021215670413945,
+    "ci_low": 0.01763189127390928,
+    "ci_high": 0.022397234948788765
+  },
+  "paired_auc_test": {
+    "auc_difference": 0.016869918355589486,
+    "ci_low": 0.015361743265137085,
+    "ci_high": 0.018278645521752665
+  },
+  "lgd_ead": {
+    "lgd": 0.8905945410666922,
+    "ead_share": 0.580825515939157,
+    "charged_off_loans_used": 18281
+  },
+  "extra_challengers": [
+    {
+      "model": "xgboost",
+      "status": "skipped: xgboost not installed"
+    },
+    {
+      "model": "torch_mlp",
+      "status": "skipped: torch not installed"
+    }
+  ],
+  "extra_challengers_vs_scorecard_test": [],
+  "expected_loss_pct_approved_test": 0.037060218731247874,
+  "approve_share_test": 0.520204252670738,
+  "live_experiment_loans_per_arm_for_1pt_change": 12849,
+  "target_definition": "1 = loan charged off or defaulted at any point during its 36-month term; 0 = fully paid. Lifetime default flag, not a 12-month PD.",
+  "runtime_seconds": 367.9
+}

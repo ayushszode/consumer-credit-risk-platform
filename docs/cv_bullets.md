@@ -5,12 +5,12 @@
 - Built an end-to-end credit decision workflow on public LendingClub loan data, using DuckDB SQL to
   prepare a documented population and a feature register with automated checks to block
   post-funding (leakage) fields.
-- Developed an explainable weight-of-evidence scorecard and tested it against a gradient boosting
-  challenger on an out-of-time year, using a champion rule set in advance (AUC gain, confidence
-  interval and calibration).
-- Translated predictions into risk bands, approve / refer / decline cut-offs and expected loss
-  (PD x LGD x EAD), with PSI monitoring and a FastAPI / Streamlit service giving reason codes,
-  covered by 48 automated tests on GitHub Actions.
+- Developed an explainable weight-of-evidence scorecard and a gradient boosting challenger on
+  589,249 loans; boosting won under a rule set in advance and reached an out-of-time AUC of 0.682
+  (scorecard 0.665).
+- Translated predictions into risk bands and approve / refer / decline cut-offs: 52% of 2015 loans
+  approved automatically with an 8.5% bad rate and 3.71% expected loss (PD x LGD x EAD); added PSI
+  monitoring and a FastAPI / Streamlit service with reason codes, covered by 48 automated tests.
 - (Only after the Databricks run is done:) Ran the data preparation in PySpark on Databricks (same population as the DuckDB and pandas
   versions, checked by a test) and compared XGBoost and a PyTorch neural network with the scorecard
   on the same out-of-time loans.

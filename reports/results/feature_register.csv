@@ -1,0 +1,62 @@
+field,available_at_application,decision,reason
+acc_open_past_24mths,True,use,Application-time information
+addr_state,True,segments only,"Used for monitoring by region, not as a model input"
+annual_inc,True,use,Application-time information
+application_type,True,population rule,Used to define the eligible population or the target
+bc_util,True,use,Application-time information
+collection_recovery_fee,False,exclude (leakage),Recorded after the loan was issued
+debt_settlement_flag,False,exclude (leakage),Recorded after the loan was issued
+delinq_2yrs,True,use,Application-time information
+dti,True,use,Application-time information
+earliest_cr_line,True,use,Application-time information; used to build credit_history_months
+emp_length,True,use,Application-time information; used to build emp_length_years
+fico_range_high,True,use,Application-time information; used to build fico_mid
+fico_range_low,True,use,Application-time information; used to build fico_mid
+funded_amnt,False,exclude (leakage),Recorded after the loan was issued
+funded_amnt_inv,False,exclude (leakage),Recorded after the loan was issued
+grade,True,benchmark only,"Set by the lender's own grading/pricing, not by the applicant"
+hardship_flag,False,exclude (leakage),Recorded after the loan was issued
+home_ownership,True,use,Application-time information
+id,True,exclude (identifier),"Identifier, no predictive meaning"
+inq_last_6mths,True,use,Application-time information
+installment,True,benchmark only,"Set by the lender's own grading/pricing, not by the applicant"
+int_rate,True,benchmark only,"Set by the lender's own grading/pricing, not by the applicant"
+issue_d,True,use,Application-time information; used to build issue_date / credit_history_months
+last_credit_pull_d,False,exclude (leakage),Recorded after the loan was issued
+last_fico_range_high,False,exclude (leakage),Recorded after the loan was issued
+last_fico_range_low,False,exclude (leakage),Recorded after the loan was issued
+last_pymnt_amnt,False,exclude (leakage),Recorded after the loan was issued
+last_pymnt_d,False,exclude (leakage),Recorded after the loan was issued
+loan_amnt,True,use,Application-time information
+loan_status,False,exclude (leakage),Recorded after the loan was issued
+mo_sin_rcnt_tl,True,use,Application-time information
+mort_acc,True,use,Application-time information
+mths_since_last_delinq,True,use,Application-time information
+mths_since_recent_inq,True,use,Application-time information
+next_pymnt_d,False,exclude (leakage),Recorded after the loan was issued
+num_actv_rev_tl,True,use,Application-time information
+open_acc,True,use,Application-time information
+out_prncp,False,exclude (leakage),Recorded after the loan was issued
+out_prncp_inv,False,exclude (leakage),Recorded after the loan was issued
+percent_bc_gt_75,True,use,Application-time information
+policy_code,True,population rule,Used to define the eligible population or the target
+pub_rec,True,use,Application-time information
+pub_rec_bankruptcies,True,use,Application-time information
+purpose,True,use,Application-time information
+pymnt_plan,False,exclude (leakage),Recorded after the loan was issued
+recoveries,False,exclude (leakage),Recorded after the loan was issued
+revol_bal,True,use,Application-time information
+revol_util,True,use,Application-time information
+settlement_amount,False,exclude (leakage),Recorded after the loan was issued
+settlement_status,False,exclude (leakage),Recorded after the loan was issued
+sub_grade,True,benchmark only,"Set by the lender's own grading/pricing, not by the applicant"
+term,True,use,Application-time information; used to build term_months
+tot_cur_bal,True,use,Application-time information
+total_acc,True,use,Application-time information
+total_pymnt,False,exclude (leakage),Recorded after the loan was issued
+total_pymnt_inv,False,exclude (leakage),Recorded after the loan was issued
+total_rec_int,False,exclude (leakage),Recorded after the loan was issued
+total_rec_late_fee,False,exclude (leakage),Recorded after the loan was issued
+total_rec_prncp,False,exclude (leakage),Recorded after the loan was issued
+total_rev_hi_lim,True,use,Application-time information
+verification_status,True,use,Application-time information

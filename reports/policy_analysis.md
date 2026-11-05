@@ -69,9 +69,18 @@ repayments over the life of the loan, early settlement, competitor rates and cap
 
 ## Findings from the full run
 
-<!-- Fill from results.md:
-     - band table: are the bands in order, and how close are predicted and observed rates?
-     - share approved / referred / declined at 12% and 25%, and the observed bad rate in each
-     - expected loss on approved loans, with the LGD and EAD used
-     - one sentence on what moving the approve cut-off from 12% to 10% or 15% would do
-     - how the illustrative rate compares with LendingClub's rate by band -->
+Run of 5 November 2026, champion = gradient boosting, 2015 loans.
+
+- **Bands are in order** with no overlap: observed bad rate 4.5% (A), 9.2% (B), 14.7% (C), 20.7% (D),
+  29.4% (E). Predicted rates are below observed in every band (4.1%, 8.0%, 12.3%, 18.1%, 27.9%), the
+  same calibration drift described in `model_development.md`.
+- **At 12% / 25%:** 52.0% of loans approved automatically (observed bad rate 8.5%), 39.3% referred
+  (19.6%) and 8.7% declined (31.7%). The 12% cut-off catches 70.3% of the loans that went bad.
+- **Expected loss on approved loans: 3.71%** of the amount lent, with LGD 0.89 and EAD 0.58 estimated
+  from 18,281 charged-off training loans. Across LGD 0.7-1.0 and EAD 0.5-0.7 the figure ranges from
+  2.5% to 5.0%.
+- **Moving the approve cut-off:** at 10% the approval share falls to 41.1% with a bad rate of 7.2%;
+  at 15% it rises to 65.8% with a bad rate of 10.0%.
+- **Pricing:** the illustrative risk-based rate runs from 9.7% (A) to 13.8% (E), against LendingClub's
+  7.7% to 15.0%. The illustrative curve is flatter: dearer for the safest band, cheaper for the
+  riskiest, because it covers expected loss only and ignores competition and capital.

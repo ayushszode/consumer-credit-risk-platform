@@ -1,0 +1,9 @@
+step,loans
+total_rows,2260668
+missing_key_fields,0
+policy_code_not_1,0
+not_36_month_term,650914
+issued_outside_window,1020119
+not_individual_application,239
+unresolved_outcome,147
+eligible,589249

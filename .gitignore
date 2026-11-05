@@ -4,9 +4,11 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
-# Trained models are rebuilt with the pipeline
+# Trained models are rebuilt with the pipeline, except the published one used by the live app
+# (models, settings and median values only: no loan records)
 artifacts/*
 !artifacts/.gitkeep
+!artifacts/model_bundle.joblib
 
 __pycache__/
 *.pyc

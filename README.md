@@ -4,13 +4,13 @@
 
 ![Consumer Credit Risk Platform](images/cover.png)
 
-**Live demo:** [ayushszode-credit-risk.streamlit.app](https://ayushszode-credit-risk.streamlit.app) (runs on synthetic data until the full LendingClub results are added; the app says so on every page)
+**Live demo:** [ayushszode-credit-risk.streamlit.app](https://ayushszode-credit-risk.streamlit.app) (uses the model trained on the real LendingClub loans; the applicants you score there are made up)
 
 End-to-end consumer credit risk project using **Python, SQL and scikit-learn** on public LendingClub
 loan data. It goes from a raw loan file to a lending decision: an explainable scorecard, a challenger
 model, approve / refer / decline cut-offs, expected loss, monitoring, and a small API and app to score
-one applicant at a time. The data preparation also runs in **PySpark on Databricks**, and **XGBoost**
-and a **PyTorch** network are tested as extra challengers on the same loans.
+one applicant at a time. The data preparation can also run in **PySpark** (for example on Databricks), and **XGBoost**
+and a **PyTorch** network can be tested as extra challengers on the same loans.
 
 ## Business objective
 
@@ -40,13 +40,59 @@ Raw data is not committed to this repository. See [`data/README.md`](data/README
 
 ## Results
 
-_The full run on the real data has not been done yet. This section will hold the verified numbers:
-population size, test-year AUC / Gini / KS and calibration for each model, the champion decision,
-the share of 2015 loans approved automatically and their default rate, expected loss, and how XGBoost
-and the PyTorch network compare with the scorecard. Until then,
-`make demo` runs the whole pipeline on synthetic data to show it works._
+Full run on the real file (5 November 2026). Every number below is read from `reports/results/`; the
+complete auto-generated summary is in [`reports/results.md`](reports/results.md).
 
-<!-- Every number added here must come from reports/results/ after `make run`. -->
+**Population.** 2,260,668 loans in the file; **589,249 eligible** 36-month individual
+loans issued 2012-2015 with a final outcome. The largest exclusions were loans issued outside the window
+(1,020,119) and 60-month loans (650,914); only 147 loans were dropped for having no final outcome.
+
+| Split | Issued | Loans | Bad rate |
+| --- | --- | --- | --- |
+| Train | 2012-2013 | 143,892 | 12.7% |
+| Validation | 2014 | 162,570 | 13.7% |
+| Test | 2015 | 282,787 | 14.9% |
+
+**Model comparison on the 2015 test year** (the same 282,787 loans for every model):
+
+| Model | AUC (95% CI) | Gini | KS | Calibration slope |
+| --- | --- | --- | --- | --- |
+| Scorecard (13 WoE features) | 0.665 (0.662-0.668) | 0.330 | 0.238 | 1.02 |
+| Gradient boosting | 0.682 (0.679-0.685) | 0.363 | 0.264 | 0.97 |
+| Benchmark incl. LendingClub grade and rate | 0.693 (0.690-0.696) | 0.386 | 0.280 | 0.96 |
+
+- **Champion: gradient boosting.** Decided on the 2014 validation year
+  with the rule set in advance: AUC +0.020 over the scorecard (95% CI 0.018 to 0.022), calibration slope 0.97. On 2015 the gain held at +0.017 (95% CI 0.015 to 0.018).
+- The independent model comes within 0.012 AUC of a benchmark that also sees
+  LendingClub's own grade and interest rate.
+- **Calibration:** the ranking holds (slopes close to 1), but the models predict too low in 2015: mean predicted
+  PD 13.2% against an observed 14.9%, because the bad rate rose from 12.7% in the training years. Before live use the intercept would be recalibrated;
+  the monitoring replay below shows this gap opening quarter by quarter.
+
+<p>
+  <img src="reports/figures/roc_test.png" alt="ROC curves on the 2015 test year" width="49%">
+  <img src="reports/figures/calibration_test.png" alt="Calibration on the 2015 test year" width="49%">
+</p>
+
+**Lending policy on 2015 loans** (cut-offs fixed in advance: approve below 12% PD, decline at 25% or above):
+
+| Decision | Share of loans | Observed bad rate |
+| --- | --- | --- |
+| Approve | 52.0% | 8.5% |
+| Refer | 39.3% | 19.6% |
+| Decline | 8.7% | 31.7% |
+
+- Risk bands A to E are in order: observed bad rate from 4.5% (A) to 29.4% (E).
+- **Expected lifetime loss on auto-approved loans: 3.71% of the amount lent**, with
+  LGD 0.89 and EAD 0.58 of the original amount, estimated from 18,281 charged-off training loans.
+
+**Monitoring replay (2014 Q1 to 2015 Q4).** Score PSI stayed at or below 0.017 every quarter
+(stable) and AUC stayed between 0.672 and 0.686. The input to investigate is
+`verification_status` (PSI 0.20 between the training years and 2015).
+
+**Extra challengers.** XGBoost and the PyTorch network were not part of this run (their libraries were not
+installed where it ran). Their comparison is added by the GitHub Actions or Databricks run
+(`docs/github_full_run.md`), in `reports/results/extra_challengers_vs_scorecard_test.csv`.
 
 ## Modelling approach
 
@@ -88,11 +134,11 @@ payment date, later credit scores) is blocked, and the pipeline stops if one get
 - The extra challengers are **reported, not deployed**: the champion rule below is unchanged. Both
   are optional and skipped automatically if the library isn't installed
 
-### Champion rule (set before scoring 2015)
+### Champion rule (judged on 2014, so 2015 stays a clean test)
 
-Boosting replaces the scorecard only if it improves test AUC by at least **0.01**, the 95% confidence
-interval for the gain (paired bootstrap on the same loans) is above zero, and its calibration slope
-stays between **0.8 and 1.2**.
+Boosting replaces the scorecard only if, on the 2014 validation year, it improves AUC by at least
+**0.01**, the 95% confidence interval for the gain (paired bootstrap on the same loans) is above zero,
+and its calibration slope stays between **0.8 and 1.2**. 2015 is used only to report the result.
 
 ### Lending policy and loss
 
@@ -178,7 +224,7 @@ conda create -n credit-risk python=3.12 -y
 conda activate credit-risk
 make setup        # install requirements and the package
 make test         # 48 tests on synthetic data (5 skip without the extras below)
-make demo         # whole pipeline on synthetic data, under a minute
+make demo         # whole pipeline on synthetic data, under a minute (overwrites reports/ and the model)
 ```
 
 With the real file in `data/raw/`:

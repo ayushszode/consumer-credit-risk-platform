@@ -28,5 +28,7 @@ date, rather than editing the earlier entries.
 
 ## Changes after the real run
 
-<!-- Add here with a date, for example:
-     | 16 | 2026-11-02 | ... | ... | ... | -->
+| # | Date | Change | Why | Effect |
+| --- | --- | --- | --- | --- |
+| 20 | 2026-11-05 | Champion rule judged on the 2014 validation year instead of 2015 | 2015 should only report the result, never help choose it | None: boosting won on both years (+0.020 on 2014, +0.017 on 2015) |
+| 21 | 2026-11-05 | Real run used the pandas reader | DuckDB and the extras were not installed where it ran | None on the population: the three readers are checked to agree |

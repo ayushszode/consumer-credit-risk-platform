@@ -10,11 +10,11 @@ Built an end-to-end consumer credit risk project on public LendingClub loan data
 lending decision. Prepared the data with SQL (DuckDB), blocked post-funding fields with a feature
 register and automated checks, and trained on 2012 to 2013, tuned on 2014 and tested on 2015.
 
-Built an explainable weight-of-evidence scorecard and tested it against a gradient boosting
-challenger using a champion rule set before scoring the test year. Turned predictions into risk
-bands and approve / refer / decline cut-offs with expected loss (PD x LGD x EAD), added PSI
-monitoring, and served decisions with plain-English reasons through a FastAPI service and a
-Streamlit app, with automated tests on GitHub Actions.
+Built an explainable weight-of-evidence scorecard and a gradient boosting challenger, choosing
+between them with a rule set in advance. On 589,249 loans, boosting reached a 2015 test AUC of 0.682
+(scorecard 0.665). At a 12% PD cut-off, 52% of 2015 loans would be approved automatically with an
+8.5% bad rate and 3.71% expected loss. Added risk bands, PSI monitoring, and a FastAPI service and
+Streamlit app that give plain-English reasons, with automated tests on GitHub Actions.
 
 **Tools:** Python | SQL | DuckDB | pandas | scikit-learn | FastAPI | Streamlit | pytest | GitHub Actions
 

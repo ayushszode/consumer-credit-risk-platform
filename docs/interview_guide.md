@@ -43,12 +43,28 @@ The scorecard is a logistic regression on WoE values, rescaled so that 600 point
 good loans to 1 bad, and every 20 extra points doubles those odds. Each applicant's score is the
 sum of points across their bins, so you can see exactly where they gained or lost points.
 
-## Why keep the scorecard if boosting might be better?
+## Why did boosting become the champion?
 
-The rule was: boosting wins only if it improves AUC by at least 0.01, the confidence interval for
-the improvement is above zero, and it stays calibrated. A small or uncertain gain is not worth giving
-up a model that a customer, underwriter or regulator can follow point by point. If boosting had
-passed the rule, I would have used it.
+The rule, set in advance, was: boosting wins only if it improves AUC by at least 0.01 on the 2014
+validation year, the confidence interval for the improvement is above zero, and it stays calibrated.
+It passed: +0.020 AUC (95% CI 0.018 to 0.022), calibration slope 0.97. On 2015, which played no part
+in the choice, the gain held at +0.017. So I used it, even though the rule leaned towards the
+scorecard.
+
+## How do you explain a boosting decision?
+
+For each applicant I swap one feature at a time to a typical value and see how much the PD falls; the
+three biggest falls are the reason codes. The scorecard is still kept: its points table shows the
+pattern behind the model (for example, FICO points rising from 36 to 58), and it is the fallback if
+the boosting model ever had to be withdrawn.
+
+## What did the real run show?
+
+589,249 loans; 2015 AUC 0.682 for boosting and 0.665 for the scorecard, against 0.693 for a model that
+also sees LendingClub's own grade. At the 12% cut-off, 52% of 2015 loans would be approved
+automatically with an 8.5% bad rate, and expected loss on them is 3.71% of the amount lent. The main
+issue is that defaults rose from 12.7% to 14.9% across the years, so predicted PDs ran about 1.7
+points low in 2015: the ranking is fine, the level needs recalibrating.
 
 ## Why Spark, when DuckDB already handles the file on a laptop?
 
@@ -65,8 +81,9 @@ eligible population, a few hundred thousand rows, comes back to pandas for the m
 Yes, as extra challengers. Both are trained on 2012 to 2013, stopped early on 2014 and scored on the
 same 2015 loans as the scorecard, and the AUC difference against the scorecard has a paired bootstrap
 confidence interval. On tabular credit data, trees and well-built scorecards are usually hard to beat,
-so the interesting result is how much (if anything) the extra complexity buys. [Fill in from
-`extra_challengers_vs_scorecard_test.csv` after the real run.]
+so the interesting result is how much (if anything) the extra complexity buys. (The real-data
+comparison comes from the GitHub Actions or Databricks run; until then, say that it is set up and
+tested, not that it has been run on the real data.)
 
 ## How did you set up the neural network?
 

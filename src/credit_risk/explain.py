@@ -2,7 +2,8 @@
 
 Order of responsibility:
   1. The policy engine makes the decision (approve / refer / decline). Never the language model.
-  2. Reason codes come from the scorecard points (deterministic, repeatable).
+  2. Reason codes come from the champion model, deterministically: scorecard points, or for boosting
+     the features whose typical value would lower the PD most (service.gbm_reason_codes).
   3. `template_explanation` turns those facts into a short message. This is the default.
   4. Optionally, `llm_explanation` asks a language model to reword the SAME facts more naturally,
      then checks the answer before using it. If any check fails we fall back to the template.
