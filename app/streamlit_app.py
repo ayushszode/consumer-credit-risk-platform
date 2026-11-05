@@ -384,8 +384,10 @@ if page == PAGES[0]:
 
         section("What pushed the risk up")
         reasons = r["reason_codes"]
+        gbm = bool(reasons) and "pd_reduction_if_typical" in reasons[0]
+        # only show factors that move the risk by at least half a percentage point (or any scorecard points)
+        reasons = [x for x in reasons if (x["pd_reduction_if_typical"] >= 0.005 if gbm else x["points_below_best"] > 0)]
         if reasons:
-            gbm = "pd_reduction_if_typical" in reasons[0]
             rows = pd.DataFrame([{"factor": f'{label(x["feature"])}: {_show(x["value"])}',
                                   "size": 100 * x["pd_reduction_if_typical"] if gbm else x["points_below_best"]}
                                  for x in reasons])[::-1]
