@@ -21,6 +21,10 @@ date, rather than editing the earlier entries.
 | 13 | DuckDB SQL for data preparation, pandas as a fallback | pandas only | The full file is too large for pandas on a laptop with little memory |
 | 14 | Template explanations, optional language model with checks | Language model only | Template is predictable; the model can only rephrase it |
 | 15 | Synthetic data for tests and CI | Commit a sample of real data | Real loan records stay out of the repository |
+| 16 | Add a PySpark version of the data preparation, tested against pandas | Spark only; DuckDB only | Shows the same rules running on a data platform (Databricks) without losing the laptop path |
+| 17 | XGBoost and a PyTorch network as extra challengers, reported not deployed | Replace the main challenger; skip them | Answers "did you try X?" with evidence, without changing the champion rule after the fact |
+| 18 | No class weighting in the network | Weight defaults more heavily | Weighting distorts predicted probabilities, which the policy and expected loss depend on |
+| 19 | Extra libraries optional, with a separate CI job | Make them required | The core project installs quickly; the extras are still tested on every push |
 
 ## Changes after the real run
 

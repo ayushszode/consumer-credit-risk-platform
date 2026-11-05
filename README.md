@@ -9,7 +9,8 @@
 End-to-end consumer credit risk project using **Python, SQL and scikit-learn** on public LendingClub
 loan data. It goes from a raw loan file to a lending decision: an explainable scorecard, a challenger
 model, approve / refer / decline cut-offs, expected loss, monitoring, and a small API and app to score
-one applicant at a time.
+one applicant at a time. The data preparation also runs in **PySpark on Databricks**, and **XGBoost**
+and a **PyTorch** network are tested as extra challengers on the same loans.
 
 ## Business objective
 
@@ -41,7 +42,8 @@ Raw data is not committed to this repository. See [`data/README.md`](data/README
 
 _The full run on the real data has not been done yet. This section will hold the verified numbers:
 population size, test-year AUC / Gini / KS and calibration for each model, the champion decision,
-the share of 2015 loans approved automatically and their default rate, and expected loss. Until then,
+the share of 2015 loans approved automatically and their default rate, expected loss, and how XGBoost
+and the PyTorch network compare with the scorecard. Until then,
 `make demo` runs the whole pipeline on synthetic data to show it works._
 
 <!-- Every number added here must come from reports/results/ after `make run`. -->
@@ -56,6 +58,8 @@ the share of 2015 loans approved automatically and their default rate, and expec
   saved (`population_audit.csv`)
 - A pandas version of the same rules runs if DuckDB is not installed, and a test checks both give
   the same result
+- A **PySpark** version (`spark_data.py`) runs the same rules on a Spark cluster such as Databricks
+  (`--engine spark`); a third test checks Spark gives exactly the same population as pandas
 
 ### Leakage control
 
@@ -76,6 +80,13 @@ payment date, later credit scores) is blocked, and the pipeline stops if one get
 - **Gradient boosting** (`HistGradientBoostingClassifier`) on the same features, tuned on 2014
 - **Benchmark**: the same model also given LendingClub's own grade and interest rate, to show how
   close an independent model gets to the lender's own view. It is never a candidate for use
+- **Extra challengers** (`challengers.py`), scored on the same 2015 loans and compared with the
+  scorecard using a paired bootstrap:
+  - **XGBoost**, small grid, early stopping on 2014
+  - a small **PyTorch** network (two hidden layers, quantile-scaled inputs, missing-value flags,
+    early stopping on 2014 log loss, no class weighting so the outputs stay usable as probabilities)
+- The extra challengers are **reported, not deployed**: the champion rule below is unchanged. Both
+  are optional and skipped automatically if the library isn't installed
 
 ### Champion rule (set before scoring 2015)
 
@@ -119,7 +130,7 @@ consumer-credit-risk-platform/
 ├── DATA_LICENSE_NOTICE.md
 ├── LICENSE
 ├── Makefile
-├── requirements.txt / requirements-dev.txt / constraints.txt
+├── requirements.txt / requirements-dev.txt / requirements-extras.txt / constraints.txt
 ├── configs/
 │   └── base.yaml                  # every threshold and setting in one place
 ├── sql/
@@ -127,8 +138,8 @@ consumer-credit-risk-platform/
 │   ├── 02_population.sql
 │   └── 03_features.sql
 ├── src/credit_risk/
-│   ├── data.py  features.py  quality.py
-│   ├── scorecard.py  models.py  evaluate.py
+│   ├── data.py  spark_data.py  features.py  quality.py
+│   ├── scorecard.py  models.py  challengers.py  evaluate.py
 │   ├── policy.py  pricing.py  monitoring.py  experiment.py
 │   ├── explain.py  service.py  figures.py
 │   ├── synthetic.py               # fake loans for tests and the demo
@@ -137,7 +148,9 @@ consumer-credit-risk-platform/
 │   └── main.py                    # FastAPI: /health, /score
 ├── app/
 │   └── streamlit_app.py           # 5-page app
-├── tests/                         # 41 tests, synthetic data only
+├── notebooks/
+│   └── databricks_full_run.py     # full run on Databricks: Spark prep + all models
+├── tests/                         # 48 tests, synthetic data only
 ├── examples/
 │   └── applicant.json
 ├── reports/
@@ -149,7 +162,7 @@ consumer-credit-risk-platform/
 │   └── cover.png
 ├── docs/
 │   ├── case_study.md  interview_guide.md  data_dictionary.md
-│   ├── linkedin_entry.md  cv_bullets.md  github_setup.md
+│   ├── linkedin_entry.md  cv_bullets.md  github_setup.md  databricks_guide.md
 ├── data/
 │   ├── README.md
 │   ├── raw/                       # downloaded locally; excluded from Git
@@ -163,7 +176,7 @@ consumer-credit-risk-platform/
 conda create -n credit-risk python=3.12 -y
 conda activate credit-risk
 make setup        # install requirements and the package
-make test         # 41 tests on synthetic data
+make test         # 48 tests on synthetic data (5 skip without the extras below)
 make demo         # whole pipeline on synthetic data, under a minute
 ```
 
@@ -181,6 +194,16 @@ make api          # http://127.0.0.1:8000/docs
 curl -X POST http://127.0.0.1:8000/score -H "Content-Type: application/json" -d @examples/applicant.json
 make app          # Streamlit app in the browser
 ```
+
+Optional extras (XGBoost, PyTorch CPU build, PySpark):
+
+```bash
+make setup-extras
+make run-spark    # data preparation in PySpark (needs Java 17+ on your own machine)
+```
+
+To run everything on **Databricks** (Free Edition is enough), follow
+[`docs/databricks_guide.md`](docs/databricks_guide.md) and the notebook in `notebooks/`.
 
 See [`START_HERE.md`](START_HERE.md) for the same steps one at a time.
 
@@ -216,9 +239,9 @@ See [`START_HERE.md`](START_HERE.md) for the same steps one at a time.
 
 ## Skills demonstrated
 
-**Credit Risk | Scorecards | Python | SQL | DuckDB | scikit-learn | Logistic Regression | Gradient
-Boosting | Model Validation | Calibration | Monitoring (PSI) | Expected Loss | FastAPI | Streamlit |
-Testing | GitHub Actions**
+**Credit Risk | Scorecards | Python | SQL | DuckDB | PySpark | Databricks | scikit-learn | XGBoost |
+PyTorch | Logistic Regression | Gradient Boosting | Model Validation | Calibration | Monitoring (PSI) |
+Expected Loss | FastAPI | Streamlit | Testing | GitHub Actions**
 
 ---
 

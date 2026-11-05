@@ -17,7 +17,9 @@ pip install -e .
 pytest
 ```
 
-You should see 41 passed. The tests only use synthetic loans, so no download is needed.
+You should see 43 passed and 5 skipped. The skipped ones test XGBoost, PyTorch and Spark, which are
+optional (`make setup-extras` installs them; then all 48 run). The tests only use synthetic loans, so
+no download is needed.
 
 ## 3. Try the pipeline on synthetic data
 

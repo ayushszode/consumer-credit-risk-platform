@@ -50,6 +50,46 @@ the improvement is above zero, and it stays calibrated. A small or uncertain gai
 up a model that a customer, underwriter or regulator can follow point by point. If boosting had
 passed the rule, I would have used it.
 
+## Why Spark, when DuckDB already handles the file on a laptop?
+
+DuckDB is the right tool for 2.2 million rows on one machine. Spark is what a lender's data platform
+runs on, where application tables are far bigger and spread across many machines. I wrote the same
+population rules in PySpark and ran them on Databricks, and a test checks that Spark, DuckDB and
+pandas produce exactly the same loans and features. So the rules don't depend on the tool.
+
+The heavy step, reading and cleaning about 150 columns for every loan, happens in Spark. Only the
+eligible population, a few hundred thousand rows, comes back to pandas for the models.
+
+## Did you try XGBoost or a neural network?
+
+Yes, as extra challengers. Both are trained on 2012 to 2013, stopped early on 2014 and scored on the
+same 2015 loans as the scorecard, and the AUC difference against the scorecard has a paired bootstrap
+confidence interval. On tabular credit data, trees and well-built scorecards are usually hard to beat,
+so the interesting result is how much (if anything) the extra complexity buys. [Fill in from
+`extra_challengers_vs_scorecard_test.csv` after the real run.]
+
+## How did you set up the neural network?
+
+A small network: two hidden layers (64 and 32 units), ReLU, a little dropout, trained with binary
+cross-entropy and the Adam optimiser. Neural networks need inputs on similar scales and no gaps, so
+numeric features are filled with the training median, passed through a quantile transform (which
+handles skewed income and balances without hand-picked caps), and each feature that had gaps gets a
+0/1 "was missing" flag. Categories are one-hot encoded. I didn't weight the classes, because that
+would distort the probabilities, and probabilities are what the policy and expected loss use.
+
+## What is early stopping, and doesn't it reuse the validation year?
+
+After each pass over the training loans, I check the loss on 2014 and keep the best version; training
+stops when it stops improving. It does use 2014 to choose, the same way the boosting grid does. That
+is why 2015 is kept completely untouched: every number I quote comes from 2015.
+
+## Why not deploy XGBoost or the network if it wins?
+
+The champion rule was set before the test year was scored and covers the scorecard and the main
+boosting model. If an extra challenger clearly won, the right step would be to record it in the
+validation review and test it properly (calibration, explanations, stability by quarter), not to swap
+it in quietly. In a bank, a new model type also means new validation and governance work.
+
 ## Why does calibration matter, not just AUC?
 
 AUC only says whether the model ranks people in the right order. Cut-offs and expected loss use the

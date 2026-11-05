@@ -23,8 +23,10 @@ would ask.
 | Data | Does missingness change over time (a sign the data collection changed)? | `results/missing_by_year.csv` | _fill in_ |
 | Leakage | Could any input only be known after funding? | `results/feature_register.csv`, `test_features.py` | _fill in_ |
 | Leakage | Do SQL and Python give the same population? | `test_sql_matches_python.py` | _fill in_ |
+| Implementation | Does the PySpark version give the same population as pandas? | `test_spark_matches_pandas.py` | _fill in_ |
 | Discrimination | Does the model rank good and bad loans apart on a year it has not seen? | AUC, Gini, KS in `results/metrics.csv` | _fill in_ |
 | Discrimination | Is the difference between models real or noise? | Paired bootstrap in `results/summary.json` | _fill in_ |
+| Discrimination | Do XGBoost or the PyTorch network add anything over the scorecard? | `results/extra_challengers_vs_scorecard_test.csv` | _fill in_ |
 | Calibration | Do predicted PDs match observed bad rates? | `results/calibration_test_*.csv`, `figures/calibration_test.png` | _fill in_ |
 | Calibration | Are the risk bands in the right order with no overlap? | `results/bands_test.csv` | _fill in_ |
 | Stability | Does performance hold quarter by quarter? | `results/monitoring_replay.csv` | _fill in_ |

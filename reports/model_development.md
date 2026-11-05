@@ -8,7 +8,8 @@ to `reports/results.md` and the CSV files in `reports/results/`; this page expla
 **Source.** LendingClub accepted loans, 2007 to 2018 Q4, from the Kaggle copy described in
 [`../data/README.md`](../data/README.md).
 
-**Cleaning** (`sql/01_clean.sql`, with the same rules in `data.clean_raw` for pandas):
+**Cleaning** (`sql/01_clean.sql`, with the same rules in `data.clean_raw` for pandas and in
+`spark_data.py` for PySpark, used on Databricks):
 
 - every column is read as text first, then converted with `TRY_CAST`, so one bad value does not stop
   the load;
@@ -96,6 +97,19 @@ All three are in `results/boosting_grid.csv`.
 
 **Benchmark.** The same model again, also given `int_rate` and `sub_grade`. It is not a candidate for
 use. It answers one question: how much of LendingClub's own view can an independent model reproduce?
+
+**Extra challengers** (`challengers.py`, reported, not deployed):
+
+- **XGBoost**: two settings (`configs/base.yaml`), up to 2,000 trees with early stopping on 2014 log
+  loss; categories one-hot encoded, missing numeric values left for XGBoost to route. Grid in
+  `results/xgboost_grid.csv`.
+- **PyTorch network**: two hidden layers (64, 32), ReLU, dropout 0.1, Adam, binary cross-entropy;
+  numeric inputs median-filled and quantile-transformed, plus a "was missing" flag per numeric feature,
+  categories one-hot encoded. Early stopping on 2014 log loss (patience 3). Training curve in
+  `results/torch_mlp_training.csv`. No class weighting, so outputs stay usable as probabilities.
+
+Both are scored on the same 2015 loans; `results/extra_challengers_vs_scorecard_test.csv` gives the
+AUC difference against the scorecard with a paired bootstrap interval, and their calibration slope.
 
 ## 5. Choosing the champion
 
