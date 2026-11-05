@@ -81,7 +81,7 @@ section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked)
 .eyebrow {font-size: .74rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #C8902E; margin-bottom: .4rem;}
 .page-title {font-family: 'Fraunces', Georgia, serif; font-size: 2.45rem; line-height: 1.08; font-weight: 650; color: #1C2A26; margin: 0;}
 .page-title em {font-style: italic; color: #127C5A;}
-.page-lead {font-size: 1.03rem; color: #5E6E68; max-width: 800px; margin: .65rem 0 1.4rem; line-height: 1.6;}
+.page-lead {font-size: 1.03rem; color: #5E6E68; max-width: 800px; margin: .8rem 0 1.4rem !important; line-height: 1.6;}
 .section-title {font-family: 'Fraunces', Georgia, serif; font-size: 1.38rem; font-weight: 650; color: #1C2A26; margin: 1.7rem 0 .15rem;}
 .section-sub {color: #5E6E68; font-size: .93rem; margin-bottom: .7rem; max-width: 820px; line-height: 1.5;}
 
@@ -393,7 +393,7 @@ if page == PAGES[0]:
                                    text=[f"{v:.1f} pts" if gbm else f"{v:.0f} pts" for v in rows["size"]],
                                    textposition="outside", cliponaxis=False,
                                    hovertemplate="%{y}<br>%{x:.2f}<extra></extra>"))
-            fig.update_xaxes(title="Risk would fall by (percentage points) if this were typical" if gbm
+            fig.update_xaxes(title="Fall in risk if this were typical (% points)" if gbm
                              else "Points below the best possible", showgrid=False)
             show(fig, height=210, margin=dict(l=8, r=70, t=20, b=8))
         else:
@@ -530,7 +530,7 @@ elif page == PAGES[2]:
             f"rate among them climbs towards the {pct(overall)} of all 2015 loans.")
     fig = go.Figure()
     fig.add_hline(y=100 * overall, line=dict(color=SLATE, dash="dot"), annotation_text=f"All 2015 loans: {pct(overall)}",
-                  annotation_position="bottom right", annotation_font_color=SLATE)
+                  annotation_position="top left", annotation_font_color=SLATE)
     fig.add_trace(go.Scatter(x=100 * curve["selected_share"], y=100 * curve["observed_bad_rate"], mode="lines",
                              line=dict(color=EMERALD, width=3.5), customdata=100 * curve["cutoff_pd"], name="Every cut-off",
                              fill="tozeroy", fillcolor="rgba(18,124,90,0.07)",
