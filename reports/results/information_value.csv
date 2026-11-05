@@ -1,0 +1,29 @@
+feature,iv,bins,status,strength
+fico_mid,0.1738517573513044,7,selected,medium
+dti,0.06541633493965564,9,selected,weak
+loan_to_income,0.03008907693819703,6,selected,weak
+inq_last_6mths,0.0251421218381868,3,selected,weak
+revol_util,0.021937898360832923,8,selected,weak
+bc_util,0.01998011972993563,8,dropped: IV 0.01998 below 0.02,not useful
+annual_inc,0.01761026206028555,6,dropped: IV 0.01761 below 0.02,not useful
+loan_amnt,0.012514694969991035,7,dropped: IV 0.01251 below 0.02,not useful
+mths_since_recent_inq,0.01070078845540336,7,dropped: IV 0.0107 below 0.02,not useful
+credit_history_months,0.009286547754289512,6,dropped: IV 0.009287 below 0.02,not useful
+acc_open_past_24mths,0.005276669831436351,7,dropped: IV 0.005277 below 0.02,not useful
+home_ownership,0.00487050350219611,3,dropped: IV 0.004871 below 0.02,not useful
+mths_since_last_delinq,0.004408202370022912,4,dropped: IV 0.004408 below 0.02,not useful
+verification_status,0.0037577399142941573,3,dropped: IV 0.003758 below 0.02,not useful
+delinq_2yrs,0.0037339225369298493,2,dropped: IV 0.003734 below 0.02,not useful
+tot_cur_bal,0.003087019348969205,8,dropped: IV 0.003087 below 0.02,not useful
+total_acc,0.003010514849772995,8,dropped: IV 0.003011 below 0.02,not useful
+mo_sin_rcnt_tl,0.002951524660844195,6,dropped: IV 0.002952 below 0.02,not useful
+open_acc,0.0025119120078968753,8,dropped: IV 0.002512 below 0.02,not useful
+mort_acc,0.0019943290824388153,3,dropped: IV 0.001994 below 0.02,not useful
+percent_bc_gt_75,0.0019425357310299866,8,dropped: IV 0.001943 below 0.02,not useful
+num_actv_rev_tl,0.0018146362099875453,5,dropped: IV 0.001815 below 0.02,not useful
+emp_length_years,0.0017763484841815036,7,dropped: IV 0.001776 below 0.02,not useful
+purpose,0.0011796744159505153,4,dropped: IV 0.00118 below 0.02,not useful
+pub_rec,0.0011119485562875854,2,dropped: IV 0.001112 below 0.02,not useful
+revol_bal,0.0009404656031251617,6,dropped: IV 0.0009405 below 0.02,not useful
+total_rev_hi_lim,0.0009043111187401123,8,dropped: IV 0.0009043 below 0.02,not useful
+pub_rec_bankruptcies,0.0,1,dropped: IV 0 below 0.02,not useful

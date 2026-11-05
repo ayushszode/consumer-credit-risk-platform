@@ -1,0 +1,3 @@
+learning_rate,max_depth,min_child_weight,iterations_used,validation_auc
+0.05,4,50,120,0.6735578776460673
+0.05,6,100,97,0.671637018730742

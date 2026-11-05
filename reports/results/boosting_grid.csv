@@ -1,0 +1,4 @@
+learning_rate,max_leaf_nodes,min_samples_leaf,iterations_used,validation_auc
+0.05,15,200,117,0.6696348606062813
+0.05,31,200,117,0.6622694838627112
+0.03,31,500,145,0.6673179596051123
