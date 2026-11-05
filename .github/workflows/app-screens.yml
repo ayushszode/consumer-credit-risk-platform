@@ -1,0 +1,75 @@
+name: app screenshots
+
+on:
+  push:
+    branches: ["dev/app-redesign"]
+
+permissions:
+  contents: write
+
+jobs:
+  screens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: |
+          pip install -r requirements.txt playwright
+          pip install -e .
+          python -m playwright install --with-deps chromium
+      - name: Start the app
+        run: |
+          nohup streamlit run app/streamlit_app.py --server.headless true --server.port 8501 > streamlit.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:8501/_stcore/health && break; sleep 2; done
+      - name: Take screenshots
+        run: |
+          mkdir -p screens
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          PAGES = ["Score an applicant", "Compare the models", "Lending policy", "Monitoring", "About the project"]
+          problems = []
+          def settle(pg, ms=6000):
+              pg.wait_for_timeout(ms)
+              if pg.locator('[data-testid="stException"]').count():
+                  problems.append(pg.locator('[data-testid="stException"]').first.inner_text())
+          with sync_playwright() as p:
+              b = p.chromium.launch()
+              pg = b.new_page(viewport={"width": 1440, "height": 3600})
+              pg.on("console", lambda m: m.type == "error" and print("console:", m.text))
+              pg.goto("http://localhost:8501")
+              pg.wait_for_selector('[data-testid="stPlotlyChart"]', timeout=180000)
+              settle(pg, 8000)
+              for i, name in enumerate(PAGES, 1):
+                  if i > 1:
+                      pg.locator('[data-testid="stSidebar"]').get_by_text(name, exact=True).click()
+                      settle(pg)
+                  pg.screenshot(path=f"screens/desktop-{i}.png")
+              pg.locator('[data-testid="stSidebar"]').get_by_text(PAGES[0], exact=True).click()
+              settle(pg)
+              pg.get_by_role("button", name="Strong applicant").click()
+              settle(pg)
+              pg.screenshot(path="screens/desktop-1-strong.png")
+              demo = b.new_page(viewport={"width": 1440, "height": 1000}, device_scale_factor=2)
+              demo.goto("http://localhost:8501")
+              demo.wait_for_selector('[data-testid="stPlotlyChart"]', timeout=180000)
+              settle(demo, 8000)
+              demo.screenshot(path="screens/app_demo.png")
+              phone = b.new_page(viewport={"width": 390, "height": 4200})
+              phone.goto("http://localhost:8501")
+              phone.wait_for_selector('[data-testid="stPlotlyChart"]', timeout=180000)
+              settle(phone, 8000)
+              phone.screenshot(path="screens/phone-1.png")
+              b.close()
+          print("problems:", problems)
+          PY
+          tail -40 streamlit.log
+      - name: Save the screenshots on this branch
+        run: |
+          git config user.name "Ayush Zode"
+          git config user.email "268604377+ayushszode@users.noreply.github.com"
+          git add screens
+          git commit -m "App screenshots" && git push || echo "nothing to push"

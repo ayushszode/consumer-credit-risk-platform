@@ -12,4 +12,5 @@ duckdb>=1.0
 fastapi>=0.110
 uvicorn>=0.29
 pydantic>=2.6
-streamlit>=1.33
+streamlit>=1.50
+plotly>=5.20
