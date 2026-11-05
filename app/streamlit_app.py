@@ -27,7 +27,7 @@ GITHUB = "https://github.com/ayushszode/consumer-credit-risk-platform"
 LINKEDIN = "https://www.linkedin.com/in/ayushsanjayzode"
 
 st.set_page_config(page_title="Credit Desk · consumer credit risk", page_icon="◆", layout="wide",
-                   initial_sidebar_state="expanded")
+                   initial_sidebar_state="auto")
 
 # ---------------------------------------------------------------- look and feel
 INK, SLATE, LINE, CREAM, PAPER = "#1C2A26", "#5E6E68", "#E8E2D6", "#FBF8F3", "#F3EEE4"
@@ -36,13 +36,17 @@ OUTCOME = {"approve": (EMERALD, "Approve"), "refer": (AMBER, "Refer to an underw
            "decline": (CORAL, "Decline")}
 BAND_COLOUR = {"A": "#127C5A", "B": "#5AA67F", "C": "#C9A23F", "D": "#E0873A", "E": "#D2554D"}
 MODEL_COLOUR = {"scorecard": "#4C7A93", "gbm": EMERALD, "benchmark": "#A69F92", "xgboost": GOLD, "torch_mlp": "#7D5A84"}
+SHORT_NAME = {"scorecard": "Scorecard", "gbm": "Gradient boosting", "benchmark": "Benchmark"}
 MODEL_NAME = {"scorecard": "Scorecard", "gbm": "Gradient boosting", "benchmark": "Benchmark (with LendingClub grade)",
               "xgboost": "XGBoost", "torch_mlp": "PyTorch network"}
 
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=DM+Sans:wght@400;500;600;700&display=swap');
-html, body, .stApp, [class*="css"], button, input, textarea {font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;}
+html, body, .stApp, .stApp p, .stApp li, .stApp label, .stApp input, .stApp textarea, .stApp button, .stMarkdown,
+[data-testid="stWidgetLabel"] {font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif !important;}
+header[data-testid="stHeader"] {background: transparent;}
+.stAppDeployButton, [data-testid="stAppDeployButton"] {display: none;}
 .stApp {
   background:
     radial-gradient(1100px 520px at 108% -12%, rgba(200,144,46,.13), transparent 60%),
@@ -172,12 +176,32 @@ def _show(v) -> str:
     return str(v)
 
 
+def _num(x: str) -> str:
+    v = float(x)
+    if abs(v) >= 1000:
+        return f"{v:,.0f}"
+    return f"{v:g}"
+
+
+def pretty_bin(b: str) -> str:
+    """'[-inf, 667)' -> 'under 667', '[667, 677)' -> '667 to 677', '[732, inf)' -> '732+'."""
+    b = str(b)
+    if not (b.startswith("[") and b.endswith(")") and "," in b):
+        return b.replace("_", " ").capitalize()
+    lo, hi = (t.strip() for t in b[1:-1].split(",", 1))
+    if lo == "-inf":
+        return f"under {_num(hi)}"
+    if hi == "inf":
+        return f"{_num(lo)}+"
+    return f"{_num(lo)} to {_num(hi)}"
+
+
 def label(feature: str) -> str:
     return FEATURE_LABELS.get(feature, feature.replace("_", " ").capitalize())
 
 
 def heading(eyebrow: str, title: str, lead: str) -> None:
-    st.markdown(f'<div class="eyebrow">{eyebrow}</div><h1 class="page-title">{title}</h1>'
+    st.markdown(f'<div class="eyebrow">{eyebrow}</div><div class="page-title">{title}</div>'
                 f'<p class="page-lead">{lead}</p>', unsafe_allow_html=True)
 
 
@@ -189,18 +213,19 @@ def section(title: str, sub: str = "") -> None:
 def kpis(items: list[tuple]) -> None:
     """items: (label, value, note, tone) with tone in green / gold / coral / slate."""
     for col, (lab, value, note, tone) in zip(st.columns(len(items)), items):
-        col.markdown(f'<div class="kpi {tone}"><div class="kpi-label">{lab}</div><div class="kpi-value">{value}</div>'
+        size = ' style="font-size:1.5rem"' if len(str(value)) > 12 else ""
+        col.markdown(f'<div class="kpi {tone}"><div class="kpi-label">{lab}</div><div class="kpi-value"{size}>{value}</div>'
                      f'<div class="kpi-note">{note}</div></div>', unsafe_allow_html=True)
 
 
 _charts = {"n": 0}
 
 
-def show(fig: go.Figure, height: int = 360) -> None:
+def show(fig: go.Figure, height: int = 360, margin: dict | None = None) -> None:
     _charts["n"] += 1
     fig.update_layout(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                       font=dict(family="DM Sans, sans-serif", color=INK, size=13), height=height,
-                      margin=dict(l=8, r=8, t=36, b=8), hoverlabel=dict(bgcolor="white", font_family="DM Sans"),
+                      margin=margin or dict(l=8, r=8, t=36, b=8), hoverlabel=dict(bgcolor="white", font_family="DM Sans"),
                       legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, bgcolor="rgba(0,0,0,0)"))
     fig.update_xaxes(gridcolor="#EFE9DD", zeroline=False, linecolor=LINE)
     fig.update_yaxes(gridcolor="#EFE9DD", zeroline=False, linecolor=LINE)
@@ -298,7 +323,7 @@ if page == PAGES[0]:
             "Fill in a made-up application, or start from one of the three below. The model estimates the chance "
             "the loan goes bad over its 36 months, and the lending policy turns that into a decision. Nothing you "
             "type is stored.")
-    b1, b2, b3, _ = st.columns([1, 1, 1, 3])
+    b1, b2, b3, _ = st.columns([1.15, 1.15, 1.15, 2])
     b1.button("Strong applicant", key="preset_strong", on_click=apply_preset, args=("strong",), width="stretch")
     b2.button("Typical applicant", key="preset_typical", on_click=apply_preset, args=("typical",), width="stretch")
     b3.button("Stretched applicant", key="preset_stretched", on_click=apply_preset, args=("stretched",), width="stretch")
@@ -311,10 +336,10 @@ if page == PAGES[0]:
             c1.number_input("Loan amount ($)", 500, 40000, key="f_loan_amnt", step=500)
             c2.number_input("Annual income ($)", 1000, 1_000_000, key="f_annual_inc", step=1000)
             st.slider("Credit score (FICO)", 600, 850, key="f_fico", step=5)
-            st.slider("Debt-to-income ratio (%)", 0.0, 60.0, key="f_dti", step=0.5)
+            st.slider("Debt-to-income ratio (%)", 0.0, 60.0, key="f_dti", step=0.5, format="%.1f")
             c1, c2 = st.columns(2)
-            c1.slider("Revolving credit used (%)", 0.0, 120.0, key="f_revol_util", step=1.0)
-            c2.slider("Bank card credit used (%)", 0.0, 120.0, key="f_bc_util", step=1.0)
+            c1.slider("Revolving credit used (%)", 0.0, 120.0, key="f_revol_util", step=1.0, format="%.0f")
+            c2.slider("Bank card credit used (%)", 0.0, 120.0, key="f_bc_util", step=1.0, format="%.0f")
             c1, c2 = st.columns(2)
             c1.number_input("Credit enquiries, last 6 months", 0, 20, key="f_inq_last_6mths")
             c2.text_input("First credit account (YYYY-MM)", key="f_earliest_cr_line")
@@ -352,7 +377,7 @@ if page == PAGES[0]:
             f'<div><div class="label">Decision</div><div class="verdict">{verdict}</div></div>'
             f'<div class="meta">Risk band <b>{r["risk_band"]}</b><br>Scorecard points <b>{r["scorecard_points"]:.0f}</b></div>'
             f'</div>', unsafe_allow_html=True)
-        show(risk_gauge(r["probability_of_default"], bundle["policy"]), height=270)
+        show(risk_gauge(r["probability_of_default"], bundle["policy"]), height=290, margin=dict(l=40, r=50, t=60, b=10))
         st.markdown(f'<div class="section-sub" style="text-align:center;margin-top:-.6rem">Green: approve below '
                     f'{pct(bundle["policy"]["approve_max_pd"], 0)} · amber: refer · red: decline from '
                     f'{pct(bundle["policy"]["decline_min_pd"], 0)}</div>', unsafe_allow_html=True)
@@ -368,9 +393,9 @@ if page == PAGES[0]:
                                    text=[f"{v:.1f} pts" if gbm else f"{v:.0f} pts" for v in rows["size"]],
                                    textposition="outside", cliponaxis=False,
                                    hovertemplate="%{y}<br>%{x:.2f}<extra></extra>"))
-            fig.update_xaxes(title="Percentage points of risk removed if this were typical" if gbm
+            fig.update_xaxes(title="Risk would fall by (percentage points) if this were typical" if gbm
                              else "Points below the best possible", showgrid=False)
-            show(fig, height=200)
+            show(fig, height=210, margin=dict(l=8, r=70, t=20, b=8))
         else:
             st.markdown('<div class="quote">Nothing in this application stands out as raising the risk.</div>',
                         unsafe_allow_html=True)
@@ -383,12 +408,12 @@ if page == PAGES[0]:
             "the credit score moves; the dot is the score entered above.")
     curve = fico_curve(a)
     fig = go.Figure()
-    fig.add_hrect(y0=0, y1=100 * bundle["policy"]["approve_max_pd"], fillcolor="#D7EFE3", opacity=.55, line_width=0)
+    fig.add_hrect(y0=0, y1=100 * bundle["policy"]["approve_max_pd"], fillcolor="#D7EFE3", opacity=.55, line_width=0, layer="below")
     fig.add_hrect(y0=100 * bundle["policy"]["approve_max_pd"], y1=100 * bundle["policy"]["decline_min_pd"],
-                  fillcolor="#F8E6C2", opacity=.55, line_width=0)
+                  fillcolor="#F8E6C2", opacity=.55, line_width=0, layer="below")
     fig.add_hrect(y0=100 * bundle["policy"]["decline_min_pd"], y1=max(60, 100 * curve["pd"].max() + 5),
-                  fillcolor="#F5D2CF", opacity=.55, line_width=0)
-    fig.add_trace(go.Scatter(x=curve["fico"], y=100 * curve["pd"], mode="lines", line=dict(color=INK, width=3, shape="spline"),
+                  fillcolor="#F5D2CF", opacity=.55, line_width=0, layer="below")
+    fig.add_trace(go.Scatter(x=curve["fico"], y=100 * curve["pd"], mode="lines", line=dict(color=INK, width=3),
                              name="Estimated risk", hovertemplate="FICO %{x}<br>Risk %{y:.1f}%<extra></extra>"))
     fig.add_trace(go.Scatter(x=[ss["f_fico"]], y=[100 * r["probability_of_default"]], mode="markers",
                              marker=dict(size=14, color=colour, line=dict(color="white", width=3)), name="This applicant",
@@ -409,7 +434,7 @@ elif page == PAGES[1]:
     st.markdown(f'<div class="winner"><span class="tag">Champion</span><div class="name">{MODEL_NAME[info["champion"]]}</div>'
                 f'<p>{info["champion_reason"]}</p></div>', unsafe_allow_html=True)
     st.write("")
-    kpis([(MODEL_NAME[k], f"{test.loc[k, 'auc']:.3f}", f"AUC on 2015 · 95% CI {test.loc[k, 'auc_ci_low']:.3f} to "
+    kpis([(SHORT_NAME[k], f"{test.loc[k, 'auc']:.3f}", f"AUC on 2015 · 95% CI {test.loc[k, 'auc_ci_low']:.3f}–"
            f"{test.loc[k, 'auc_ci_high']:.3f}", tone) for k, tone in [("scorecard", "slate"), ("gbm", "green"),
                                                                      ("benchmark", "gold")] if k in test.index]
          + [("Loans tested", f"{int(test['loans'].iloc[0]):,}", "the same loans for every model", "slate")])
@@ -420,13 +445,12 @@ elif page == PAGES[1]:
                 "95% bootstrap intervals.")
         fig = go.Figure()
         for split, name, colour in [("validation", "2014 (validation)", "#CFC6B6"), ("test", "2015 (test)", EMERALD)]:
-            d = m[(m["split"] == split) & m["model"].isin(MODEL_NAME)]
-            fig.add_trace(go.Bar(x=[MODEL_NAME[x] for x in d["model"]], y=d["auc"], name=name, marker_color=colour,
+            d = m[(m["split"] == split) & m["model"].isin(SHORT_NAME)]
+            fig.add_trace(go.Bar(x=[SHORT_NAME[x] for x in d["model"]], y=d["auc"], name=name, marker_color=colour,
                                  error_y=dict(type="data", array=d["auc_ci_high"] - d["auc"],
                                               arrayminus=d["auc"] - d["auc_ci_low"], color=INK, thickness=1.2),
-                                 text=[f"{v:.3f}" for v in d["auc"]], textposition="outside",
                                  hovertemplate="%{x}<br>AUC %{y:.3f}<extra></extra>"))
-        fig.update_yaxes(range=[0.6, 0.72], title="AUC")
+        fig.update_yaxes(range=[0.6, 0.71], title="AUC")
         fig.update_layout(barmode="group", bargap=.35)
         show(fig, height=360)
     with c2:
@@ -464,7 +488,7 @@ elif page == PAGES[1]:
         default = feats.index("fico_mid") if "fico_mid" in feats else 0
         f = st.selectbox("Characteristic", feats, index=default, format_func=label, label_visibility="collapsed")
         d = pts[pts["feature"] == f]
-        fig = go.Figure(go.Bar(x=d["bin"].astype(str), y=d["points"], customdata=d[["bad_rate", "n"]],
+        fig = go.Figure(go.Bar(x=[pretty_bin(b) for b in d["bin"]], y=d["points"], customdata=d[["bad_rate", "n"]],
                                marker=dict(color=d["bad_rate"], colorscale=[[0, EMERALD], [0.5, GOLD], [1, CORAL]],
                                            colorbar=dict(title="Bad rate", tickformat=".0%", thickness=10)),
                                hovertemplate="%{x}<br>%{y} points<br>Bad rate %{customdata[0]:.1%}"
@@ -502,18 +526,22 @@ elif page == PAGES[2]:
           ("Bad rate of approved", pct(row["observed_bad_rate"]), f"against {pct(overall)} for all 2015 loans", "gold"),
           ("Bad loans avoided", pct(row["bad_loans_avoided_share"]), "share of bad loans not approved", "coral")])
 
+    section("The trade-off", f"Each point on the line is a cut-off. Moving right approves more loans, and the bad "
+            f"rate among them climbs towards the {pct(overall)} of all 2015 loans.")
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=100 * curve["cutoff_pd"], y=100 * curve["selected_share"], name="Loans approved",
-                             line=dict(color=EMERALD, width=3), hovertemplate="Cut-off %{x:.0f}%<br>Approved %{y:.1f}%<extra></extra>"))
-    fig.add_trace(go.Scatter(x=100 * curve["cutoff_pd"], y=100 * curve["observed_bad_rate"], name="Bad rate of approved",
-                             line=dict(color=CORAL, width=3), yaxis="y2",
-                             hovertemplate="Cut-off %{x:.0f}%<br>Bad rate %{y:.1f}%<extra></extra>"))
-    fig.add_vline(x=100 * cut, line=dict(color=INK, dash="dot"), annotation_text="your cut-off",
-                  annotation_position="top")
-    fig.update_layout(yaxis=dict(title="Loans approved (%)", color=EMERALD),
-                      yaxis2=dict(title="Bad rate of approved (%)", overlaying="y", side="right", color=CORAL,
-                                  showgrid=False))
-    fig.update_xaxes(title="Cut-off: highest predicted risk still approved (%)")
+    fig.add_hline(y=100 * overall, line=dict(color=SLATE, dash="dot"), annotation_text=f"All 2015 loans: {pct(overall)}",
+                  annotation_position="bottom right", annotation_font_color=SLATE)
+    fig.add_trace(go.Scatter(x=100 * curve["selected_share"], y=100 * curve["observed_bad_rate"], mode="lines",
+                             line=dict(color=EMERALD, width=3.5), customdata=100 * curve["cutoff_pd"], name="Every cut-off",
+                             fill="tozeroy", fillcolor="rgba(18,124,90,0.07)",
+                             hovertemplate="Cut-off %{customdata:.0f}%<br>Approve %{x:.1f}% of loans"
+                                           "<br>Bad rate %{y:.1f}%<extra></extra>"))
+    fig.add_trace(go.Scatter(x=[100 * row["selected_share"]], y=[100 * row["observed_bad_rate"]], mode="markers+text",
+                             marker=dict(size=18, color=GOLD, line=dict(color="white", width=3)),
+                             text=[f"<b>{pct(cut, 0)} cut-off</b>"], textposition="top left", name="Your cut-off",
+                             hovertemplate="Your cut-off<br>Approve %{x:.1f}%<br>Bad rate %{y:.1f}%<extra></extra>"))
+    fig.update_xaxes(title="Share of 2015 loans approved (%)", range=[0, 101])
+    fig.update_yaxes(title="Bad rate among approved loans (%)", range=[0, 100 * curve["observed_bad_rate"].max() + 2])
     show(fig, height=380)
 
     c1, c2 = st.columns([1.35, 1], gap="large")
@@ -584,9 +612,9 @@ elif page == PAGES[3]:
     with c1:
         section("Has the score shifted?", "Population Stability Index of the score each quarter.")
         fig = go.Figure()
-        fig.add_hrect(y0=0, y1=0.10, fillcolor="#D7EFE3", opacity=.6, line_width=0)
-        fig.add_hrect(y0=0.10, y1=0.25, fillcolor="#F8E6C2", opacity=.6, line_width=0)
-        fig.add_hrect(y0=0.25, y1=0.30, fillcolor="#F5D2CF", opacity=.6, line_width=0)
+        fig.add_hrect(y0=0, y1=0.10, fillcolor="#D7EFE3", opacity=.6, line_width=0, layer="below")
+        fig.add_hrect(y0=0.10, y1=0.25, fillcolor="#F8E6C2", opacity=.6, line_width=0, layer="below")
+        fig.add_hrect(y0=0.25, y1=0.30, fillcolor="#F5D2CF", opacity=.6, line_width=0, layer="below")
         fig.add_trace(go.Scatter(x=rep["quarter"], y=rep["score_psi"], mode="lines+markers", line=dict(color=INK, width=3),
                                  marker=dict(size=9), name="Score PSI", hovertemplate="%{x}<br>PSI %{y:.3f}<extra></extra>"))
         fig.update_yaxes(range=[0, 0.3], title="PSI")
@@ -647,7 +675,8 @@ else:
 
     c1, c2 = st.columns([1.1, 1], gap="large")
     with c1:
-        section("From 2.26 million rows to the modelled population", "Each rule, in order, and how many loans remained.")
+        section(f"From {audit['total_rows'] / 1e6:.2f} million rows to {int(audit['eligible']):,} loans",
+                "Each rule, in order, and how many loans remained.")
         remaining, stages, values = int(audit["total_rows"]), ["All loans in the file"], [int(audit["total_rows"])]
         names = {"not_36_month_term": "36-month term only", "issued_outside_window": "Issued 2012–2015",
                  "not_individual_application": "Individual applications", "unresolved_outcome": "Known final outcome"}
@@ -657,7 +686,7 @@ else:
             values.append(remaining)
         fig = go.Figure(go.Funnel(y=stages, x=values, textinfo="value", texttemplate="%{value:,}",
                                   marker=dict(color=["#CFC6B6", "#B9C9B9", "#8DBFA3", "#4FA37A", EMERALD]),
-                                  connector=dict(line=dict(color=LINE))))
+                                  connector=dict(fillcolor="#F1ECE2", line=dict(color=LINE, width=1))))
         show(fig, height=340)
     with c2:
         section("What this is not")
