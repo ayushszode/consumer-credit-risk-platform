@@ -50,7 +50,7 @@ jobs:
                   pg.screenshot(path=f"screens/desktop-{i}.png")
               pg.locator('[data-testid="stSidebar"]').get_by_text(PAGES[0], exact=True).click()
               settle(pg)
-              pg.get_by_role("button", name="Strong applicant").click()
+              pg.get_by_role("button", name="Strong", exact=True).click()
               settle(pg)
               pg.screenshot(path="screens/desktop-1-strong.png")
               demo = b.new_page(viewport={"width": 1440, "height": 1000}, device_scale_factor=2)
@@ -58,6 +58,11 @@ jobs:
               demo.wait_for_selector('[data-testid="stPlotlyChart"]', timeout=180000)
               settle(demo, 8000)
               demo.screenshot(path="screens/app_demo.png")
+              for i, name in enumerate(PAGES, 1):
+                  if i > 1:
+                      demo.locator('[data-testid="stSidebar"]').get_by_text(name, exact=True).click()
+                      settle(demo)
+                  demo.screenshot(path=f"screens/hero-{i}.png")
               phone = b.new_page(viewport={"width": 390, "height": 4200})
               phone.goto("http://localhost:8501")
               phone.wait_for_selector('[data-testid="stPlotlyChart"]', timeout=180000)
