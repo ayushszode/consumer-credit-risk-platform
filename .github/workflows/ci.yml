@@ -2,11 +2,12 @@ name: tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, "dev/**"]
   pull_request:
 
 jobs:
   test:
+    name: core (no optional libraries)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -22,3 +23,36 @@ jobs:
         run: pytest
       - name: Smoke-test the full pipeline on synthetic data
         run: python -m credit_risk.pipeline --synthetic
+
+  extras:
+    name: extras (XGBoost, PyTorch, PySpark)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -r requirements-extras.txt --extra-index-url https://download.pytorch.org/whl/cpu
+          pip install -e .
+      - name: Run tests, including the extra challengers and Spark checks
+        run: pytest -rs
+      - name: Smoke-test the pipeline with Spark data preparation and both extra challengers
+        run: |
+          rm -rf data/processed reports/results artifacts/*.joblib
+          python -m credit_risk.pipeline --synthetic --engine spark
+          python - <<'PY'
+          import json
+          s = json.load(open("reports/results/summary.json"))
+          assert s["engine"] == "spark", s["engine"]
+          trained = [r["model"] for r in s["extra_challengers"] if r["status"] == "trained"]
+          assert set(trained) == {"xgboost", "torch_mlp"}, s["extra_challengers"]
+          print("extra challengers vs scorecard:", s["extra_challengers_vs_scorecard_test"])
+          PY

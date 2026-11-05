@@ -1,10 +1,11 @@
 """The challenger model and the lender-grade benchmark.
 
 Challenger: scikit-learn's HistGradientBoostingClassifier.
-  Why this one rather than LightGBM or XGBoost? It is a fast histogram-based gradient boosting
-  model of the same family, it handles missing values and categories natively, and it ships
-  with scikit-learn, so the project has one fewer dependency to install and maintain. If it ever
-  became the bottleneck, swapping in LightGBM would be a small change.
+  Why this one as the main challenger rather than XGBoost? It is a fast histogram-based gradient
+  boosting model of the same family, it handles missing values and categories natively, and it
+  ships with scikit-learn, so the deployed models need no extra library. XGBoost and a small
+  PyTorch network are trained as extra challengers in challengers.py, scored on the same loans,
+  to show whether a different library or a neural network would have been worth it.
 
 Benchmark: the same model type trained on the applicant features PLUS LendingClub's own grade
 and interest rate. It is not a candidate for approving loans (those fields come from the

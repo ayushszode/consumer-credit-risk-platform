@@ -3,6 +3,7 @@
     python -m credit_risk.pipeline                 # real LendingClub file (see data/README.md)
     python -m credit_risk.pipeline --sample 0.2    # 20% stratified sample, for quick development
     python -m credit_risk.pipeline --synthetic     # fake data, for demos and checks (no download)
+    python -m credit_risk.pipeline --engine spark  # data preparation in PySpark (e.g. on Databricks)
 
 Outputs:
     artifacts/model_bundle.joblib   - models + policy + versions, used by the API and app
@@ -23,7 +24,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from . import evaluate, experiment, figures, monitoring, policy, pricing, quality
+from . import challengers, evaluate, experiment, figures, monitoring, policy, pricing, quality
 from .config import load_config
 from .data import load_population, split_summary, stratified_sample, time_split
 from .features import (CATEGORICAL_FEATURES, LENDER_FIELDS, MODEL_FEATURES, NUMERIC_FEATURES, assert_no_leakage,
@@ -112,10 +113,16 @@ def run(config_path=None, synthetic=False, sample_frac=None, engine="auto", n_sy
     bench, _ = tune_gradient_boosting(train, valid, NUMERIC_FEATURES + ["int_rate"], CATEGORICAL_FEATURES + ["sub_grade"],
                                       b["grid"][:1], b["max_iter"], seed)
 
+    # 3b. Extra challengers (XGBoost, PyTorch network): reported for comparison, never deployed.
+    #     Each is skipped if its library isn't installed.
+    extra, extra_status, extra_tables = challengers.fit_extra_challengers(
+        train, valid, NUMERIC_FEATURES, CATEGORICAL_FEATURES, cfg.get("challengers"), seed)
+
     def scores(df):
         return {"scorecard": sc.predict_proba(df)[:, 1],
                 "gbm": gbm.predict_proba(df[MODEL_FEATURES])[:, 1],
-                "benchmark": bench.predict_proba(df[NUMERIC_FEATURES + ["int_rate"] + CATEGORICAL_FEATURES + ["sub_grade"]])[:, 1]}
+                "benchmark": bench.predict_proba(df[NUMERIC_FEATURES + ["int_rate"] + CATEGORICAL_FEATURES + ["sub_grade"]])[:, 1],
+                **{name: m.predict_proba(df[MODEL_FEATURES])[:, 1] for name, m in extra.items()}}
 
     # 4. Evaluation on the same loans for every model
     metric_rows, cal_tables, cal_stats = [], {}, {}
@@ -133,6 +140,10 @@ def run(config_path=None, synthetic=False, sample_frac=None, engine="auto", n_sy
             test_scores = sc_
     metrics = pd.DataFrame(metric_rows)
     paired = evaluate.paired_auc_difference(test["bad"], test_scores["scorecard"], test_scores["gbm"], seed=seed)
+    extra_vs_scorecard = pd.DataFrame([
+        {"model": name, **evaluate.paired_auc_difference(test["bad"], test_scores["scorecard"], test_scores[name], seed=seed),
+         "calibration_slope": cal_stats[name]["calibration_slope"]}
+        for name in extra], columns=["model", "auc_difference", "ci_low", "ci_high", "calibration_slope"])
     champion, reason = choose_champion(metrics, paired, cal_stats)
     test = test.assign(pd_scorecard=test_scores["scorecard"], pd_gbm=test_scores["gbm"],
                        pd_champion=test_scores[champion], score_points=sc.score(test))
@@ -171,8 +182,11 @@ def run(config_path=None, synthetic=False, sample_frac=None, engine="auto", n_sy
 
     # 6. Monitoring replay: validation + test years against the training years
     mc = cfg["monitoring"]
-    train_scored = train.assign(pd_champion=scores(train)[champion])
-    later = pd.concat([valid.assign(pd_champion=scores(valid)[champion]), test], ignore_index=True)
+    champion_model = sc if champion == "scorecard" else gbm
+    def champion_pd(df):
+        return champion_model.predict_proba(df if champion == "scorecard" else df[MODEL_FEATURES])[:, 1]
+    train_scored = train.assign(pd_champion=champion_pd(train))
+    later = pd.concat([valid.assign(pd_champion=champion_pd(valid)), test], ignore_index=True)
     replay = monitoring.quarterly_replay(train_scored, later, "pd_champion", NUMERIC_FEATURES, CATEGORICAL_FEATURES,
                                          mc["psi_investigate"], mc["psi_action"])
     drift_test = monitoring.drift_report(train, test, NUMERIC_FEATURES, CATEGORICAL_FEATURES, mc["psi_investigate"], mc["psi_action"])
@@ -198,6 +212,8 @@ def run(config_path=None, synthetic=False, sample_frac=None, engine="auto", n_sy
               "el_sensitivity": el_sens, "rate_comparison": rate_compare, "offline_policy_comparison": offline,
               "monitoring_replay": replay, "drift_test_vs_train": drift_test, "vintages": vintages,
               "permutation_importance_gbm": importance, "feature_register": feature_register(),
+              "extra_challengers": extra_status, "extra_challengers_vs_scorecard_test": extra_vs_scorecard,
+              **extra_tables,
               "missing_by_year": quality.missing_by_year(pop).reset_index(names="feature"),
               **{f"segments_{k}": v for k, v in segments.items()},
               **{f"calibration_test_{k}": v for k, v in cal_tables.items()}}
@@ -205,6 +221,8 @@ def run(config_path=None, synthetic=False, sample_frac=None, engine="auto", n_sy
         t.to_csv(res_dir / f"{name}.csv", index=False)
     summary = {"run_label": run_label, "synthetic": synthetic, "engine": engine_used, "model_version": bundle["model_version"],
                "champion": champion, "champion_reason": reason, "paired_auc_test": paired, "lgd_ead": lgd_ead,
+               "extra_challengers": extra_status.to_dict(orient="records"),
+               "extra_challengers_vs_scorecard_test": extra_vs_scorecard.to_dict(orient="records"),
                "expected_loss_pct_approved_test": el_point, "approve_share_test": float(share),
                "live_experiment_loans_per_arm_for_1pt_change": sample_size, "target_definition": TARGET_DEFINITION,
                "runtime_seconds": round(time.time() - t0, 1)}
@@ -230,6 +248,10 @@ def run(config_path=None, synthetic=False, sample_frac=None, engine="auto", n_sy
               f"**Target:** {TARGET_DEFINITION}\n",
               "## Model comparison (test year, same loans for every model)", _md_table(m_test), "",
               f"**Champion: {champion}.** {reason}\n",
+              "## Extra challengers (reported, not deployed)",
+              (_md_table(extra_vs_scorecard.rename(columns={"auc_difference": "auc_change_vs_scorecard"}))
+               if len(extra_vs_scorecard) else "_None trained in this run._"),
+              "", "Status: " + "; ".join(f"{r.model}: {r.status}" for r in extra_status.itertuples()) + "\n",
               "## Risk bands (test year)", _md_table(bands), "",
               "## Policy outcomes at the configured cut-offs (test year, historical funded loans only)", _md_table(outcomes), "",
               f"Estimated LGD {lgd_ead['lgd']:.2f} and EAD {lgd_ead['ead_share']:.2f} of the original amount "
@@ -248,7 +270,8 @@ def main():
     ap.add_argument("--config", default=None)
     ap.add_argument("--synthetic", action="store_true", help="use generated fake data instead of the real file")
     ap.add_argument("--sample", type=float, default=None, help="stratified sample fraction, e.g. 0.2")
-    ap.add_argument("--engine", choices=["auto", "duckdb", "pandas"], default="auto")
+    ap.add_argument("--engine", choices=["auto", "duckdb", "pandas", "spark"], default="auto",
+                    help="how to read and prepare the raw file (spark = PySpark, e.g. on Databricks)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
     summary = run(args.config, args.synthetic, args.sample, args.engine)

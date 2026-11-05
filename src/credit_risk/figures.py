@@ -11,9 +11,11 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from sklearn.metrics import roc_curve  # noqa: E402
 
-COLOURS = {"scorecard": "#185FA5", "gbm": "#D85A30", "benchmark": "#888780"}
+COLOURS = {"scorecard": "#185FA5", "gbm": "#D85A30", "benchmark": "#888780", "xgboost": "#3B6D11",
+           "torch_mlp": "#7F4FA0"}
 NAMES = {"scorecard": "Scorecard (logistic, WoE)", "gbm": "Gradient boosting",
-         "benchmark": "Benchmark incl. lender grade"}
+         "benchmark": "Benchmark incl. lender grade", "xgboost": "XGBoost (extra challenger)",
+         "torch_mlp": "PyTorch network (extra challenger)"}
 
 
 def _style(ax, title, xlabel, ylabel):

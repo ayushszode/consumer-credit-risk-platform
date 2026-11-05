@@ -44,6 +44,27 @@ boosting:
     - {learning_rate: 0.03, max_leaf_nodes: 31, min_samples_leaf: 500}
   max_iter: 600
 
+challengers:
+  # Extra challengers, scored on the same loans as the scorecard. Reported, never deployed.
+  # Each one is skipped automatically if its library isn't installed:
+  #   pip install -r requirements-extras.txt --extra-index-url https://download.pytorch.org/whl/cpu
+  xgboost:
+    enabled: true
+    grid:                      # the validation year (2014) picks the winner, as for the main challenger
+      - {learning_rate: 0.05, max_depth: 4, min_child_weight: 50}
+      - {learning_rate: 0.05, max_depth: 6, min_child_weight: 100}
+    n_estimators: 2000         # upper limit; early stopping on 2014 decides how many trees are used
+    early_stopping_rounds: 50
+  torch_mlp:
+    enabled: true
+    hidden: [64, 32]           # two hidden layers
+    dropout: 0.1
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    batch_size: 1024
+    max_epochs: 30
+    patience: 3                # stop after 3 passes without a better validation log loss
+
 policy:
   version: "1.0"
   # Risk bands by predicted probability of default (upper limits).

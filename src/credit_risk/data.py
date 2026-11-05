@@ -1,11 +1,12 @@
 """Reading the raw LendingClub file and building the modelling population.
 
-Two ways to run the same steps:
+Three ways to run the same steps:
   * DuckDB + the SQL files in sql/ (preferred: reads the 2m+ row file without loading it all)
   * pandas, reading in chunks (fallback when DuckDB isn't installed, and used in the tests)
+  * PySpark (spark_data.py), for running on a Spark cluster such as Databricks
 
-Both apply the same rules, in the same order, and `tests/test_sql_matches_python.py` checks
-they agree.
+All three apply the same rules, in the same order; `tests/test_sql_matches_python.py` and
+`tests/test_spark_matches_pandas.py` check they agree.
 """
 from __future__ import annotations
 
@@ -171,6 +172,10 @@ def find_raw_file(configured: str | Path) -> Path:
 
 def load_population(cfg: dict, engine: str = "auto") -> tuple[pd.DataFrame, pd.DataFrame, str]:
     path = find_raw_file(cfg["data"]["raw_file"])
+    if engine == "spark":
+        from .spark_data import load_population_spark  # needs pyspark (and Java when run locally)
+        pop, audit = load_population_spark(path, cfg)
+        return pop, audit, "spark"
     if engine in ("auto", "duckdb"):
         try:
             pop, audit = load_population_duckdb(path, cfg)

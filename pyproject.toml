@@ -11,6 +11,10 @@ requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Ayush Sanjay Zode" }]
 
+[project.optional-dependencies]
+# pip install -e ".[extras]" --extra-index-url https://download.pytorch.org/whl/cpu
+extras = ["xgboost>=2.0", "torch>=2.2", "pyspark>=3.5"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

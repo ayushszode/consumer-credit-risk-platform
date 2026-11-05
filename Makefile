@@ -1,8 +1,11 @@
-.PHONY: setup demo run sample test api app clean
+.PHONY: setup setup-extras demo run run-spark sample test api app clean
 
 setup:            ## install everything into the current environment
 	pip install -r requirements.txt -r requirements-dev.txt
 	pip install -e .
+
+setup-extras:     ## optional: XGBoost, PyTorch (CPU build) and PySpark
+	pip install -r requirements-extras.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
 demo:             ## full pipeline on synthetic data (no download needed)
 	python -m credit_risk.pipeline --synthetic
@@ -12,6 +15,9 @@ sample:           ## 20% stratified sample of the real data, for quick checks
 
 run:              ## full pipeline on the real LendingClub file
 	python -m credit_risk.pipeline
+
+run-spark:        ## full pipeline, with the data preparation done in PySpark (needs Java 17+)
+	python -m credit_risk.pipeline --engine spark
 
 test:
 	pytest

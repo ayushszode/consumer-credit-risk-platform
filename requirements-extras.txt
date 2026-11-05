@@ -1,0 +1,10 @@
+# Optional extras: the two extra challengers and the Spark data preparation.
+# The core project, tests and demo work without these.
+#
+# PyTorch's default download includes GPU libraries (several GB). For the CPU build:
+#   pip install -r requirements-extras.txt --extra-index-url https://download.pytorch.org/whl/cpu
+#
+# PySpark needs Java 17 or newer when run on your own machine (not on Databricks).
+xgboost>=2.0
+torch>=2.2
+pyspark>=3.5

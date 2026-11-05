@@ -10,13 +10,15 @@ from credit_risk.synthetic import synthetic_applicant
 def test_pipeline_writes_everything(pipeline_run, cfg):
     reports = Path(cfg["data"]["reports_dir"])
     for name in ["metrics", "bands_test", "threshold_curve_test", "monitoring_replay", "population_audit",
-                 "information_value", "feature_register"]:
+                 "information_value", "feature_register", "extra_challengers"]:
         assert (reports / "results" / f"{name}.csv").exists(), name
     summary = json.loads((reports / "results" / "summary.json").read_text())
     assert summary["synthetic"] is True
     assert summary["champion"] in {"scorecard", "gbm"}
     assert "SYNTHETIC" in (reports / "results.md").read_text().upper()
     assert (Path(cfg["data"]["artifacts_dir"]) / "model_bundle.joblib").exists()
+    # extra challengers never become the deployed champion
+    assert summary["champion"] not in {"xgboost", "torch_mlp"}
 
 
 def test_models_compared_on_identical_loans(pipeline_run, cfg):
