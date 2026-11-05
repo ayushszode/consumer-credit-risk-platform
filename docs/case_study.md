@@ -34,7 +34,7 @@ Build a credit decision workflow that:
   with a confidence interval above zero, and stay calibrated.
 - Set risk bands and cut-offs, estimated expected loss as PD x LGD x EAD, and ran a quarterly
   monitoring replay with PSI.
-- Wrapped the model in a FastAPI service and a Streamlit app, with 48 automated tests and GitHub
+- Wrapped the model in a FastAPI service and a Streamlit app, with 52 automated tests and GitHub
   Actions.
 
 ## Results

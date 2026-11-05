@@ -198,7 +198,7 @@ consumer-credit-risk-platform/
 │   └── streamlit_app.py           # 5-page interactive app (Plotly charts)
 ├── notebooks/
 │   └── databricks_full_run.py     # full run on Databricks: Spark prep + all models
-├── tests/                         # 48 tests, synthetic data only
+├── tests/                         # 52 tests, no real loan data needed
 ├── examples/
 │   └── applicant.json
 ├── reports/
@@ -225,7 +225,7 @@ consumer-credit-risk-platform/
 conda create -n credit-risk python=3.12 -y
 conda activate credit-risk
 make setup        # install requirements and the package
-make test         # 48 tests on synthetic data (5 skip without the extras below)
+make test         # 52 tests, synthetic data (5 skip without the extras below)
 make demo         # whole pipeline on synthetic data, under a minute (overwrites reports/ and the model)
 ```
 
