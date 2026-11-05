@@ -6,6 +6,8 @@
 
 **Live demo:** [ayushszode-credit-risk.streamlit.app](https://ayushszode-credit-risk.streamlit.app) (uses the model trained on the real LendingClub loans; the applicants you score there are made up)
 
+![The app: score an applicant, see the decision and what drove it](images/app_demo.png)
+
 End-to-end consumer credit risk project using **Python, SQL and scikit-learn** on public LendingClub
 loan data. It goes from a raw loan file to a lending decision: an explainable scorecard, a challenger
 model, approve / refer / decline cut-offs, expected loss, monitoring, and a small API and app to score
@@ -193,7 +195,7 @@ consumer-credit-risk-platform/
 ├── api/
 │   └── main.py                    # FastAPI: /health, /score
 ├── app/
-│   └── streamlit_app.py           # 5-page app
+│   └── streamlit_app.py           # 5-page interactive app (Plotly charts)
 ├── notebooks/
 │   └── databricks_full_run.py     # full run on Databricks: Spark prep + all models
 ├── tests/                         # 48 tests, synthetic data only
