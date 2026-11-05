@@ -303,7 +303,7 @@ def risk_gauge(pd_value: float, policy: dict) -> go.Figure:
     fig = go.Figure(go.Indicator(
         mode="gauge+number", value=100 * pd_value,
         number=dict(suffix="%", valueformat=".1f", font=dict(family="Fraunces, Georgia, serif", size=46, color=INK)),
-        title=dict(text="Chance this loan goes bad over 36 months", font=dict(size=14, color=SLATE)),
+        title=dict(text="Chance of going bad over 36 months", font=dict(size=14, color=SLATE)),
         gauge=dict(axis=dict(range=[0, top], ticksuffix="%", tickcolor=SLATE), bar=dict(color=INK, thickness=0.22),
                    bgcolor="white", borderwidth=0,
                    steps=[dict(range=[0, approve], color="#D7EFE3"), dict(range=[approve, decline], color="#F8E6C2"),
@@ -320,13 +320,13 @@ def fico_curve(applicant: dict) -> pd.DataFrame:
 
 if page == PAGES[0]:
     heading("Loan desk", "Would we lend to <em>this</em> applicant?",
-            "Fill in a made-up application, or start from one of the three below. The model estimates the chance "
+            "Fill in a made-up application, or start from one of the three example applicants below. The model estimates the chance "
             "the loan goes bad over its 36 months, and the lending policy turns that into a decision. Nothing you "
             "type is stored.")
     b1, b2, b3, _ = st.columns([1.15, 1.15, 1.15, 2])
-    b1.button("Strong applicant", key="preset_strong", on_click=apply_preset, args=("strong",), width="stretch")
-    b2.button("Typical applicant", key="preset_typical", on_click=apply_preset, args=("typical",), width="stretch")
-    b3.button("Stretched applicant", key="preset_stretched", on_click=apply_preset, args=("stretched",), width="stretch")
+    b1.button("Strong", key="preset_strong", on_click=apply_preset, args=("strong",), width="stretch")
+    b2.button("Typical", key="preset_typical", on_click=apply_preset, args=("typical",), width="stretch")
+    b3.button("Stretched", key="preset_stretched", on_click=apply_preset, args=("stretched",), width="stretch")
 
     left, right = st.columns([1, 1.25], gap="large")
     with left:
@@ -384,8 +384,10 @@ if page == PAGES[0]:
 
         section("What pushed the risk up")
         reasons = r["reason_codes"]
+        gbm = bool(reasons) and "pd_reduction_if_typical" in reasons[0]
+        # only show factors that move the risk by at least half a percentage point (or any scorecard points)
+        reasons = [x for x in reasons if (x["pd_reduction_if_typical"] >= 0.005 if gbm else x["points_below_best"] > 0)]
         if reasons:
-            gbm = "pd_reduction_if_typical" in reasons[0]
             rows = pd.DataFrame([{"factor": f'{label(x["feature"])}: {_show(x["value"])}',
                                   "size": 100 * x["pd_reduction_if_typical"] if gbm else x["points_below_best"]}
                                  for x in reasons])[::-1]
