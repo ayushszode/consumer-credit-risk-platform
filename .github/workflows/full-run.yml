@@ -1,0 +1,89 @@
+name: full run on the real data
+
+# Runs the whole project on the real LendingClub file inside GitHub Actions:
+# Kaggle download -> PySpark data preparation -> scorecard, gradient boosting, benchmark,
+# XGBoost and PyTorch -> results uploaded as a downloadable artifact (no loan records).
+#
+# Needs your Kaggle API credentials as repository secrets (see docs/github_full_run.md).
+# Start it from the Actions tab ("Run workflow"), or by pushing a branch named run/<anything>.
+# A branch named run/dry-run uses synthetic data instead, to check the workflow itself.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["run/**"]
+
+jobs:
+  full-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      K_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      K_KEY: ${{ secrets.KAGGLE_KEY }}
+      K_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      DRY_RUN: ${{ github.ref_name == 'run/dry-run' }}
+      # local Spark: give the driver room to hand the eligible loans to pandas
+      PYSPARK_SUBMIT_ARGS: "--driver-memory 10g --conf spark.driver.maxResultSize=4g pyspark-shell"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-extras.txt --extra-index-url https://download.pytorch.org/whl/cpu
+          pip install -e . kaggle
+
+      - name: Download accepted_2007_to_2018Q4 from Kaggle
+        if: env.DRY_RUN != 'true'
+        run: |
+          [ -n "$K_USERNAME" ] && export KAGGLE_USERNAME="$K_USERNAME"
+          [ -n "$K_KEY" ] && export KAGGLE_KEY="$K_KEY"
+          [ -n "$K_API_TOKEN" ] && export KAGGLE_API_TOKEN="$K_API_TOKEN"
+          if [ -z "$K_KEY$K_API_TOKEN" ]; then
+            echo "::error::No Kaggle credentials. Add KAGGLE_USERNAME and KAGGLE_KEY (or KAGGLE_API_TOKEN) as repository secrets - see docs/github_full_run.md"
+            exit 1
+          fi
+          mkdir -p data/raw
+          kaggle datasets download wordsforthewise/lending-club -p data/raw --unzip
+          # keep only the accepted-loans file; the rejected-applications file is large and unused
+          find data/raw -iname '*rejected*' -delete
+          find data/raw -type f -exec ls -la {} \;
+          df -h . | tail -1
+
+      - name: Run the full pipeline (Spark data preparation + all models)
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then ARGS="--synthetic"; else ARGS=""; fi
+          python -m credit_risk.pipeline $ARGS --engine spark
+
+      - name: Key results
+        run: |
+          python - <<'PY'
+          import json
+          import pandas as pd
+          s = json.load(open("reports/results/summary.json"))
+          print("Run:", s["run_label"], "| engine:", s["engine"], "| champion:", s["champion"])
+          print(pd.read_csv("reports/results/population_audit.csv").to_string(index=False))
+          m = pd.read_csv("reports/results/metrics.csv")
+          print(m[m["split"] == "test"][["model", "loans", "bad_rate", "auc", "gini", "ks", "brier", "calibration_slope"]].to_string(index=False))
+          print(pd.read_csv("reports/results/extra_challengers.csv").to_string(index=False))
+          PY
+
+      - name: Upload results (no loan records)
+        uses: actions/upload-artifact@v4
+        with:
+          name: credit-risk-results
+          path: |
+            reports/results/
+            reports/figures/
+            reports/results.md
+            artifacts/model_bundle.joblib
+          retention-days: 30
+          if-no-files-found: error

@@ -162,7 +162,8 @@ consumer-credit-risk-platform/
 │   └── cover.png
 ├── docs/
 │   ├── case_study.md  interview_guide.md  data_dictionary.md
-│   ├── linkedin_entry.md  cv_bullets.md  github_setup.md  databricks_guide.md
+│   ├── linkedin_entry.md  cv_bullets.md  github_setup.md
+│   ├── databricks_guide.md  github_full_run.md
 ├── data/
 │   ├── README.md
 │   ├── raw/                       # downloaded locally; excluded from Git
@@ -202,8 +203,10 @@ make setup-extras
 make run-spark    # data preparation in PySpark (needs Java 17+ on your own machine)
 ```
 
-To run everything on **Databricks** (Free Edition is enough), follow
-[`docs/databricks_guide.md`](docs/databricks_guide.md) and the notebook in `notebooks/`.
+To run everything on the real data without a laptop, either use **GitHub Actions**
+([`docs/github_full_run.md`](docs/github_full_run.md): downloads the file from Kaggle and runs
+Spark + all models on GitHub's servers) or **Databricks** (Free Edition is enough:
+[`docs/databricks_guide.md`](docs/databricks_guide.md) and the notebook in `notebooks/`).
 
 See [`START_HERE.md`](START_HERE.md) for the same steps one at a time.
 
