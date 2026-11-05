@@ -13,6 +13,9 @@ on:
   push:
     branches: ["run/**"]
 
+permissions:
+  contents: write   # to save the results on a results/run-N branch
+
 jobs:
   full-run:
     runs-on: ubuntu-latest
@@ -87,3 +90,15 @@ jobs:
             artifacts/model_bundle.joblib
           retention-days: 30
           if-no-files-found: error
+
+      - name: Save results on a branch (results/run-N), so they can be reviewed and copied into main
+        run: |
+          BR="results/run-${{ github.run_number }}"
+          KIND=$([ "$DRY_RUN" = "true" ] && echo "synthetic data" || echo "real data")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BR"
+          git add -f reports/results reports/figures reports/results.md artifacts/model_bundle.joblib
+          git commit -q -m "Results of full run #${{ github.run_number }} ($KIND)"
+          git push -q origin "$BR"
+          echo "Results saved on branch $BR"

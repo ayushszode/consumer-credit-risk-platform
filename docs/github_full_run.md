@@ -19,7 +19,8 @@ runs on your laptop and no Databricks account is needed. It takes about 30 to 60
 
 Repository > **Actions** > **full run on the real data** > **Run workflow**.
 
-When it finishes, open the run and download **credit-risk-results** at the bottom of the page. It
+When it finishes, the results are saved in two places: a branch called `results/run-N`, and a zip
+called **credit-risk-results** at the bottom of the run's page. The zip
 holds `reports/results/` (every number), `reports/figures/`, `reports/results.md` and the trained
 model bundle. It contains no individual loan records, and the raw file is never saved anywhere
 outside that one run.
