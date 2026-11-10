@@ -79,7 +79,7 @@ def grade(q: dict, result: AgentResult, expected, tools: CreditDeskTools) -> tup
     if t == "score":
         if expected is None:
             return False, "no model loaded"
-        band_ok = re.search(rf"\bband\s*{expected['risk_band']}\b", ans, re.IGNORECASE) is not None
+        band_ok = re.search(rf"\bband\b\s*(?:(?:is|of|was)\s+|[=:]\s*)?{expected['risk_band']}\b", ans, re.IGNORECASE) is not None
         outcome_ok = expected["policy_outcome"][:5].lower() in ans.lower()
         ok = band_ok and outcome_ok
         return ok, "" if ok else f"expected band {expected['risk_band']} and '{expected['policy_outcome']}'"

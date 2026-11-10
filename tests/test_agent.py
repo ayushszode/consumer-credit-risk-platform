@@ -250,3 +250,13 @@ def test_refusal_wording_variants():
     for text in ["The tables do not contain applicant income data by state.", "The tables don't cover 2024.",
                  "I can only read the results, so I can't change that."]:
         assert REFUSAL.search(text), text
+
+
+def test_score_grader_accepts_natural_wording(tools):
+    from credit_risk.agent import AgentResult
+    q = {"id": "s", "type": "score", "question": "q", "score_args": {"fico_score": 690}}
+    exp = {"risk_band": "C", "policy_outcome": "refer"}
+    for ans in ["Risk band C, so it is referred.", "The risk band is C and the policy outcome is refer.",
+                "Band: C. Decision: refer."]:
+        assert grade(q, AgentResult("q", ans), exp, tools)[0], ans
+    assert not grade(q, AgentResult("q", "The risk band is D and the outcome is refer."), exp, tools)[0]
