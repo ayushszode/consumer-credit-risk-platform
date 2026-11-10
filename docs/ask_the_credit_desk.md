@@ -101,6 +101,5 @@ is pushed, and commits its results back to that branch.
 
 - It only knows what is in the result tables. Questions about individual borrowers, other years or
   other lenders should get "the tables don't cover that", and the evaluation checks this.
-- Language models are not deterministic, even at temperature 0, so evaluation scores can move a
-  little between runs.
+- Language models are not deterministic, so evaluation scores can move a little between runs.
 - The grounding check catches invented numbers, not misleading wording.

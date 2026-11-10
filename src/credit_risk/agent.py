@@ -282,34 +282,44 @@ class GeminiClient:
 
     URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-    def __init__(self, api_key: str | None = None, model: str | None = None, timeout: float = 60.0):
+    RETRY_CODES = {429, 500, 502, 503, 504}
+
+    def __init__(self, api_key: str | None = None, model: str | None = None, timeout: float = 150.0,
+                 retries: int = 2, backoff: float = 10.0):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY", "")
         self.model = model or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
-        self.timeout = timeout
+        self.timeout, self.retries, self.backoff = timeout, retries, backoff
         if not self.api_key:
             raise AgentError("No API key: set GEMINI_API_KEY (see docs/ask_the_credit_desk.md).")
 
     def build_request(self, contents: list[dict], system: str, tools: list[dict]) -> dict:
+        # Temperature is left at the model default: Google advises against lowering it for Gemini 3 models.
         return {
             "systemInstruction": {"parts": [{"text": system}]},
             "contents": contents,
             "tools": [{"functionDeclarations": tools}],
-            "generationConfig": {"temperature": 0.0},
         }
 
     def generate(self, contents: list[dict], system: str, tools: list[dict]) -> dict:
         body = json.dumps(self.build_request(contents, system, tools)).encode()
-        req = urllib.request.Request(self.URL.format(model=self.model), data=body, method="POST",
-                                     headers={"Content-Type": "application/json", "x-goog-api-key": self.api_key})
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                data = json.loads(resp.read())
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode(errors="replace")[:300]
-            raise AgentError(f"Gemini API error {exc.code}: {detail}") from None
-        except urllib.error.URLError as exc:
-            raise AgentError(f"Could not reach the Gemini API: {exc.reason}") from None
-        return parse_response(data)
+        problem = ""
+        for attempt in range(self.retries + 1):
+            if attempt:
+                time.sleep(self.backoff * attempt)
+            req = urllib.request.Request(self.URL.format(model=self.model), data=body, method="POST",
+                                         headers={"Content-Type": "application/json", "x-goog-api-key": self.api_key})
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    return parse_response(json.loads(resp.read()))
+            except urllib.error.HTTPError as exc:
+                problem = f"Gemini API error {exc.code}: {exc.read().decode(errors='replace')[:300]}"
+                if exc.code not in self.RETRY_CODES:
+                    break
+            except urllib.error.URLError as exc:
+                problem = f"Could not reach the Gemini API: {exc.reason}"
+            except (TimeoutError, OSError) as exc:
+                problem = f"The Gemini API timed out ({type(exc).__name__})"
+        raise AgentError(problem)
 
 
 def parse_response(data: dict) -> dict:

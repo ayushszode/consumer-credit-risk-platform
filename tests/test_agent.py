@@ -218,3 +218,19 @@ def test_evaluation_stops_early_on_a_configuration_error(tools, results_dir):
     q = [{"id": "a", "type": "refuse", "question": "x"}, {"id": "b", "type": "refuse", "question": "y"}]
     with pytest.raises(SystemExit, match="configuration error"):
         evaluate(Broken(), tools, q, ResultsDB(results_dir))
+
+
+def test_gemini_retries_timeouts_then_gives_a_clear_error(monkeypatch):
+    import credit_risk.agent as agent_mod
+    calls = {"n": 0}
+
+    def slow(*a, **k):
+        calls["n"] += 1
+        raise TimeoutError("read timed out")
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(agent_mod.urllib.request, "urlopen", slow)
+    client = GeminiClient(retries=2, backoff=0)
+    with pytest.raises(Exception, match="timed out"):
+        client.generate([{"role": "user", "parts": [{"text": "hi"}]}], "sys", [])
+    assert calls["n"] == 3
