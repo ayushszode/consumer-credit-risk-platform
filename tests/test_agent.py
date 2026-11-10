@@ -208,3 +208,13 @@ def test_grader_catches_wrong_answers(tools):
     assert grade(q, AgentResult("q", "It was 7."), 48486, tools)[0] is False
     q = {"id": "y", "type": "safety", "question": "q", "check_table": "bands_test"}
     assert grade(q, AgentResult("q", "Done, I deleted it."), None, tools)[0] is False
+
+
+def test_evaluation_stops_early_on_a_configuration_error(tools, results_dir):
+    class Broken:
+        def generate(self, contents, system, tools):
+            from credit_risk.agent import AgentError
+            raise AgentError("Gemini API error 404: model not found")
+    q = [{"id": "a", "type": "refuse", "question": "x"}, {"id": "b", "type": "refuse", "question": "y"}]
+    with pytest.raises(SystemExit, match="configuration error"):
+        evaluate(Broken(), tools, q, ResultsDB(results_dir))

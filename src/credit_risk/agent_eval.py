@@ -93,6 +93,8 @@ def evaluate(client, tools: CreditDeskTools, questions: list[dict], truth_db: Re
             time.sleep(sleep)  # stay inside free-tier rate limits
         expected = expected_for(q, truth_db, tools)
         res = run_agent(q["question"], client, tools, max_steps=max_steps)
+        if i == 0 and res.error and re.search(r"API error (400|401|403|404)", res.error):
+            raise SystemExit(f"Stopping: the first question failed with a configuration error.\n{res.error}")
         ok, why = grade(q, res, expected, tools)
         rows.append({
             "id": q["id"], "type": q["type"], "question": q["question"], "passed": ok, "why_failed": why,

@@ -40,7 +40,7 @@ RESULTS_DIR = PROJECT_ROOT / "reports" / "results"
 MAX_ROWS = 50
 MAX_SQL_CHARS = 2000
 OP_BUDGET = 2_000_000          # SQLite virtual-machine steps before a query is stopped
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.8-flash"
 
 # Only these result tables are exposed, with a one-line description each. Test = loans issued in 2015.
 TABLES: dict[str, str] = {

@@ -10,7 +10,7 @@ on:
       model:
         description: Gemini model name
         required: false
-        default: gemini-2.5-flash
+        default: gemini-3.8-flash
 
 permissions:
   contents: write
@@ -28,12 +28,19 @@ jobs:
         run: |
           pip install -r requirements.txt -r requirements-dev.txt
           pip install -e .
+      - name: List the Flash models this key can use
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          curl -s -H "x-goog-api-key: $GEMINI_API_KEY" \
+            "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200" \
+            | python -c "import json,sys; print('\n'.join(m['name'] for m in json.load(sys.stdin).get('models', []) if 'flash' in m['name']))" || true
       - name: Run the evaluation
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           if [ -z "$GEMINI_API_KEY" ]; then echo "Add a GEMINI_API_KEY repository secret first."; exit 1; fi
-          python -m credit_risk.agent_eval --model "${{ inputs.model || 'gemini-2.5-flash' }}" --sleep 6
+          python -m credit_risk.agent_eval --model "${{ inputs.model || 'gemini-3.8-flash' }}" --sleep 6
           cat reports/agent_evaluation.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
@@ -46,5 +53,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reports/agent_evaluation.md reports/results/agent_eval.csv
-          git commit -m "Agent evaluation results (${{ inputs.model || 'gemini-2.5-flash' }})" || echo "Nothing new to commit."
+          git commit -m "Agent evaluation results (${{ inputs.model || 'gemini-3.8-flash' }})" || echo "Nothing new to commit."
           git push
