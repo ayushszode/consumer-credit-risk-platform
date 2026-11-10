@@ -18,6 +18,7 @@ permissions:
 jobs:
   evaluate:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -40,7 +41,9 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           if [ -z "$GEMINI_API_KEY" ]; then echo "Add a GEMINI_API_KEY repository secret first."; exit 1; fi
-          python -m credit_risk.agent_eval --model "${{ inputs.model || 'gemini-3.8-flash' }}" --sleep 6
+          LIMIT=0
+          case "$GITHUB_REF_NAME" in eval/smoke*) LIMIT=3 ;; esac   # eval/smoke-... branches: 3 questions only
+          python -u -m credit_risk.agent_eval --model "${{ inputs.model || 'gemini-3.8-flash' }}" --sleep 6 --limit "$LIMIT"
           cat reports/agent_evaluation.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:

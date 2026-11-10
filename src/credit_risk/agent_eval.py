@@ -93,9 +93,11 @@ def evaluate(client, tools: CreditDeskTools, questions: list[dict], truth_db: Re
             time.sleep(sleep)  # stay inside free-tier rate limits
         expected = expected_for(q, truth_db, tools)
         res = run_agent(q["question"], client, tools, max_steps=max_steps)
-        if i == 0 and res.error and re.search(r"API error (400|401|403|404)", res.error):
+        if i == 0 and res.error and re.search(r"API error (400|401|403|404)|timed out", res.error):
             raise SystemExit(f"Stopping: the first question failed with a configuration error.\n{res.error}")
         ok, why = grade(q, res, expected, tools)
+        print(f"{q['id']:>4} {q['type']:<7} {'PASS' if ok else 'FAIL'}  {len(res.steps)} tool calls  "
+              f"{res.seconds:5.1f}s  {why}", flush=True)
         rows.append({
             "id": q["id"], "type": q["type"], "question": q["question"], "passed": ok, "why_failed": why,
             "grounded": res.grounded, "unverified_numbers": " ".join(res.unverified_numbers),
@@ -144,6 +146,7 @@ def main(argv=None) -> None:
     p.add_argument("--results-dir", default=str(PROJECT_ROOT / "reports" / "results"))
     p.add_argument("--sleep", type=float, default=5.0, help="seconds between questions (rate limits)")
     p.add_argument("--model", default=None)
+    p.add_argument("--limit", type=int, default=0, help="only the first N questions (quick check)")
     args = p.parse_args(argv)
 
     scorer = None
@@ -157,7 +160,11 @@ def main(argv=None) -> None:
     tools = CreditDeskTools(ResultsDB(args.results_dir), scorer)
     truth = ResultsDB(args.results_dir)
     client = GeminiClient(model=args.model)
-    df = evaluate(client, tools, load_questions(args.questions), truth, sleep=args.sleep)
+    questions = load_questions(args.questions)
+    if args.limit:
+        questions = questions[:args.limit]
+    print(f"Evaluating {len(questions)} questions with {client.model}", flush=True)
+    df = evaluate(client, tools, questions, truth, sleep=args.sleep)
     out = Path(args.results_dir) / "agent_eval.csv"
     df.to_csv(out, index=False)
     print(write_report(df, client.model, PROJECT_ROOT / "reports" / "agent_evaluation.md"))
