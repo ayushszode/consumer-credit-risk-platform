@@ -75,6 +75,26 @@ The tests in [`tests/test_agent.py`](../tests/test_agent.py) don't need a key or
 the model with a scripted stand-in and check the guardrails, the agent loop, the grounding check and
 the grading code.
 
+## Results
+
+Final run (`gemini-3.5-flash-lite`, 30 questions): **30 of 30 correct, 30 of 30 grounded**, 1.5 tool
+calls per question on average, median 4.5 seconds per question, and one query blocked by the
+guardrails. Full answers and SQL: [`reports/agent_evaluation.md`](../reports/agent_evaluation.md) and
+`reports/results/agent_eval.csv`.
+
+How it got there, honestly:
+
+| Run | Correct | Grounded | What went wrong | What changed |
+|---|---|---|---|---|
+| 1 | 28 / 30 | 28 / 30 | One real error: 17.65% written as 17.6% (truncated, not rounded). One grader bug: "The tables do not contain..." wasn't recognised as a refusal. The grounding check also missed numbers written with a comma in the question ("5,000"). One answer repeated the instructions back. | Fixed both bugs; told the model to round correctly and to refuse in its own words. |
+| 2 | 29 / 30 | 30 / 30 | Grader bug: "The risk band is C" wasn't accepted, only "band C". | Fixed the grader. |
+| 3 | 30 / 30 | 30 / 30 | Nothing. | Final. |
+
+Two caveats: 30 questions is a small test, and the prompt was adjusted after seeing runs on the same
+questions, so 30 / 30 here is not a promise about new questions. A fresh, held-out question set would
+be the next step. Earlier attempts with `gemini-2.5-flash` (no longer available to new keys) and
+`gemini-3.8-flash` (timeouts and the free quota) are why the default is Flash-Lite.
+
 ## Setting it up
 
 1. Create a free API key in Google AI Studio (aistudio.google.com → *Get API key*).

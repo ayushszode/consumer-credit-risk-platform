@@ -182,8 +182,10 @@ made-up applicant with the same function the API uses. Every query it ran is sho
   SQLite database refuses anything except reading; at most 50 rows and 6 tool rounds.
 - **Grounding check:** any number in the answer that can't be traced to a tool result is flagged.
 - **Evaluation:** 30 questions (numbers, categories, questions it should refuse, attempts to change
-  data, and scoring) whose correct answers are computed by SQL, never typed in. Run with
-  `make agent-eval`; results go to `reports/agent_evaluation.md`.
+  data, and scoring) whose correct answers are computed by SQL, never typed in. Final run with
+  `gemini-3.5-flash-lite`: **30 / 30 correct and 30 / 30 grounded** (the first run scored 28 / 30; the
+  write-up explains what was fixed and why 30 questions is still a small test). Results:
+  [`reports/agent_evaluation.md`](reports/agent_evaluation.md).
 
 It needs a free Gemini API key, kept as a secret and never committed. The public app runs in **demo
 mode**, showing the real answers and SQL from the evaluation run. Details and set-up:
