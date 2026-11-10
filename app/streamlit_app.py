@@ -723,7 +723,7 @@ elif page == PAGES[4]:
             if turn["error"]:
                 cap = f"Error: {turn['error']}"
             elif turn["grounded"]:
-                cap = f"✓ Every number traced to a tool result · {len(turn['steps'])} tool calls · {turn['seconds']} s"
+                cap = f"✓ Every number traced to a tool result · {len(turn['steps'])} tool call{'' if len(turn['steps']) == 1 else 's'} · {turn['seconds']} s"
             elif turn["stopped"]:
                 cap = "⚠ Check this answer: it hit the step limit."
             else:
@@ -745,7 +745,7 @@ elif page == PAGES[4]:
         verdict = "✓ correct" if bool(row["passed"]) else f"✗ wrong ({row['why_failed']})"
         ground = "every number traced to a tool result" if bool(row["grounded"]) else \
             f"unverified numbers: {row['unverified_numbers']}"
-        show_turn(row["question"], row["answer"], f"{verdict} · {ground} · {int(row['tool_calls'])} tool calls", steps)
+        show_turn(row["question"], row["answer"], f"{verdict} · {ground} · {int(row['tool_calls'])} tool call{'' if int(row['tool_calls']) == 1 else 's'}", steps)
         with st.expander("All 30 questions and how it did"):
             st.dataframe(ev[["id", "type", "question", "passed", "grounded", "tool_calls"]], hide_index=True)
 
