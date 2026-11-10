@@ -40,7 +40,7 @@ RESULTS_DIR = PROJECT_ROOT / "reports" / "results"
 MAX_ROWS = 50
 MAX_SQL_CHARS = 2000
 OP_BUDGET = 2_000_000          # SQLite virtual-machine steps before a query is stopped
-DEFAULT_MODEL = "gemini-3.8-flash"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 
 # Only these result tables are exposed, with a one-line description each. Test = loans issued in 2015.
 TABLES: dict[str, str] = {
@@ -312,9 +312,13 @@ class GeminiClient:
                 with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                     return parse_response(json.loads(resp.read()))
             except urllib.error.HTTPError as exc:
-                problem = f"Gemini API error {exc.code}: {exc.read().decode(errors='replace')[:300]}"
+                detail = exc.read().decode(errors="replace")
+                problem = f"Gemini API error {exc.code}: {detail[:1200]}"
                 if exc.code not in self.RETRY_CODES:
                     break
+                wait = re.search(r'"retryDelay":\s*"(\d+(?:\.\d+)?)s"', detail)  # Google says how long to wait
+                if wait and attempt < self.retries:
+                    time.sleep(min(float(wait.group(1)) + 1, 90))
             except urllib.error.URLError as exc:
                 problem = f"Could not reach the Gemini API: {exc.reason}"
             except (TimeoutError, OSError) as exc:

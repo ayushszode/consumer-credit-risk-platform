@@ -10,7 +10,7 @@ on:
       model:
         description: Gemini model name
         required: false
-        default: gemini-3.8-flash
+        default: gemini-3.5-flash-lite
 
 permissions:
   contents: write
@@ -43,7 +43,7 @@ jobs:
           if [ -z "$GEMINI_API_KEY" ]; then echo "Add a GEMINI_API_KEY repository secret first."; exit 1; fi
           LIMIT=0
           case "$GITHUB_REF_NAME" in eval/smoke*) LIMIT=3 ;; esac   # eval/smoke-... branches: 3 questions only
-          python -u -m credit_risk.agent_eval --model "${{ inputs.model || 'gemini-3.8-flash' }}" --sleep 6 --limit "$LIMIT"
+          python -u -m credit_risk.agent_eval --model "${{ inputs.model || 'gemini-3.5-flash-lite' }}" --sleep 12 --limit "$LIMIT"
           cat reports/agent_evaluation.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
@@ -56,5 +56,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reports/agent_evaluation.md reports/results/agent_eval.csv
-          git commit -m "Agent evaluation results (${{ inputs.model || 'gemini-3.8-flash' }})" || echo "Nothing new to commit."
+          git commit -m "Agent evaluation results (${{ inputs.model || 'gemini-3.5-flash-lite' }})" || echo "Nothing new to commit."
           git push

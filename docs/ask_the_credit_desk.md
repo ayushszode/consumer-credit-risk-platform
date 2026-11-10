@@ -86,8 +86,8 @@ the grading code.
    - Streamlit Community Cloud: app → *Settings* → *Secrets*, same line as above.
    - evaluation workflow (the only place the public project needs it): GitHub repo → *Settings* →
      *Secrets and variables* → *Actions* → *New repository secret* named `GEMINI_API_KEY`.
-3. Optional: `GEMINI_MODEL` (default `gemini-3.8-flash`) if you want a different model name from
-   AI Studio's list.
+3. Optional: `GEMINI_MODEL` (default `gemini-3.5-flash-lite`, chosen for its larger free quota) if you
+   want a different model from AI Studio's list.
 
 **Live or demo mode.** With `GEMINI_API_KEY` in the app's secrets, visitors can type their own
 questions (12 per visit, to protect the quota). Without it, the page runs in **demo mode**: it shows
