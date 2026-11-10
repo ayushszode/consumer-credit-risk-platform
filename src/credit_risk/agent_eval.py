@@ -20,8 +20,9 @@ from .agent import (CreditDeskTools, GeminiClient, ResultsDB, AgentResult, appli
 from .config import PROJECT_ROOT
 
 QUESTIONS = PROJECT_ROOT / "evals" / "agent_questions.yaml"
-REFUSAL = re.compile(r"(cannot|can't|can not|not able|unable|don't have|do not have|doesn't (contain|include|have)|"
-                     r"does not (contain|include|have)|not (available|included|in the (data|tables|results))|"
+REFUSAL = re.compile(r"(cannot|can't|can not|not able|unable|don't have|do not have|"
+                     r"(don't|do not|doesn't|does not) (contain|include|have|cover)|"
+                     r"not (available|included|covered|in the (data|tables|results))|"
                      r"no (data|information|table)|not allowed|won't|will not|refuse|only (read|allowed to read))",
                      re.IGNORECASE)
 

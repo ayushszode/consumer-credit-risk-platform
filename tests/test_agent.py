@@ -234,3 +234,19 @@ def test_gemini_retries_timeouts_then_gives_a_clear_error(monkeypatch):
     with pytest.raises(Exception, match="timed out"):
         client.generate([{"role": "user", "parts": [{"text": "hi"}]}], "sys", [])
     assert calls["n"] == 3
+
+
+def test_code_fences_and_sql_prefix_are_stripped():
+    assert check_sql("```sql\nSELECT 1\n```") == "SELECT 1"
+    assert check_sql("sql\nSELECT 1;") == "SELECT 1"
+
+
+def test_numbers_with_commas_in_the_question_count_as_known():
+    assert grounding_check("Among states with at least 5,000 loans, NY was highest.", [], "at least 5,000 loans") == []
+
+
+def test_refusal_wording_variants():
+    from credit_risk.agent_eval import REFUSAL
+    for text in ["The tables do not contain applicant income data by state.", "The tables don't cover 2024.",
+                 "I can only read the results, so I can't change that."]:
+        assert REFUSAL.search(text), text
