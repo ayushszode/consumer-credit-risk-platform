@@ -1,0 +1,48 @@
+name: agent evaluation
+
+# Runs the 30-question evaluation of "Ask the Credit Desk" against a real model.
+# Needs a repository secret named GEMINI_API_KEY (Settings > Secrets and variables > Actions).
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Gemini model name
+        required: false
+        default: gemini-2.5-flash
+
+permissions:
+  contents: write
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -e .
+      - name: Run the evaluation
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then echo "Add a GEMINI_API_KEY repository secret first."; exit 1; fi
+          python -m credit_risk.agent_eval --model "${{ inputs.model }}" --sleep 6
+          cat reports/agent_evaluation.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agent-evaluation
+          path: |
+            reports/agent_evaluation.md
+            reports/results/agent_eval.csv
+      - name: Commit the results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/agent_evaluation.md reports/results/agent_eval.csv
+          git commit -m "Agent evaluation results (${{ inputs.model }})" || echo "Nothing new to commit."
+          git push

@@ -18,6 +18,7 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from credit_risk.agent import CreditDeskTools, GeminiClient, ResultsDB, run_agent  # noqa: E402
 from credit_risk.features import FEATURE_LABELS  # noqa: E402
 from credit_risk.service import applicant_frame, load_bundle, predict_pd, score_applicant  # noqa: E402
 from credit_risk.synthetic import synthetic_applicant  # noqa: E402
@@ -233,7 +234,8 @@ def show(fig: go.Figure, height: int = 360, margin: dict | None = None) -> None:
 
 
 # ---------------------------------------------------------------- sidebar
-PAGES = ["Score an applicant", "Compare the models", "Lending policy", "Monitoring", "About the project"]
+PAGES = ["Score an applicant", "Compare the models", "Lending policy", "Monitoring", "Ask the data",
+         "About the project"]
 with st.sidebar:
     st.markdown('<div class="brand"><div class="brand-mark">CD</div><div><div class="brand-name">Credit Desk</div>'
                 '<div class="brand-sub">Consumer credit risk platform</div></div></div>', unsafe_allow_html=True)
@@ -657,7 +659,85 @@ elif page == PAGES[3]:
         show(fig, height=330)
 
 
-# ================================================================ 5. about
+# ================================================================ 5. ask the data
+elif page == PAGES[4]:
+    heading("AI assistant", "Ask the results <em>in plain English</em>",
+            "A language model answers questions about this project by querying the result tables and the live "
+            "model through four tools. It can only read, every SQL query is shown, and any number it can't trace "
+            "back to a tool result is flagged.")
+
+    def secret(name: str) -> str | None:
+        try:
+            return st.secrets.get(name)
+        except Exception:  # no secrets file
+            return None
+
+    @st.cache_resource
+    def desk_tools() -> CreditDeskTools:
+        return CreditDeskTools(ResultsDB(RESULTS), lambda a: score_applicant(bundle, a))
+
+    api_key = secret("GEMINI_API_KEY")
+    chat = st.session_state.setdefault("chat", [])
+    limit = 12  # questions per visit, to protect the free API quota of the public demo
+    examples = ["What share of 2015 applicants would the policy approve, and what is their bad rate?",
+                "Which loan purpose had the highest bad rate in 2015?",
+                "How much better was gradient boosting than the scorecard on the test year?",
+                "Score an applicant with a credit score of 690, income of 42,000 and a 15,000 loan."]
+    cols = st.columns(len(examples))
+    asked = None
+    for i, (col, ex) in enumerate(zip(cols, examples)):
+        if col.button(ex, key=f"ask_ex_{i}", width="stretch"):
+            asked = ex
+    typed = st.chat_input("Ask about the results, e.g. 'What is the bad rate in risk band E?'", key="ask_input")
+    asked = typed or asked
+
+    if asked:
+        if not api_key:
+            st.info("The assistant needs a Gemini API key, which isn't set for this copy of the app. Add "
+                    "`GEMINI_API_KEY` to the app's secrets (see docs/ask_the_credit_desk.md) to switch it on.")
+        elif len(chat) >= limit:
+            st.warning(f"That's the limit of {limit} questions for this visit.")
+        else:
+            with st.spinner("Querying the results..."):
+                client = GeminiClient(api_key=api_key, model=secret("GEMINI_MODEL"))
+                chat.append(run_agent(asked, client, desk_tools()).to_dict())
+
+    for turn in reversed(chat):
+        with st.chat_message("user"):
+            st.write(turn["question"])
+        with st.chat_message("assistant"):
+            st.write(turn["answer"])
+            if turn["error"]:
+                st.caption(f"Error: {turn['error']}")
+            elif turn["grounded"]:
+                st.caption(f"✓ Every number traced to a tool result · {len(turn['steps'])} tool calls · "
+                           f"{turn['seconds']} s")
+            else:
+                st.caption("⚠ Check this answer: " + (
+                    "it hit the step limit." if turn["stopped"] else
+                    "these numbers were not found in any tool result: " + ", ".join(turn["unverified_numbers"])))
+            if turn["steps"]:
+                with st.expander("How I got this"):
+                    for s in turn["steps"]:
+                        st.markdown(f"**{s['tool']}**")
+                        if s["tool"] == "run_sql":
+                            st.code(s["args"].get("query", ""), language="sql")
+                        elif s["args"]:
+                            st.json(s["args"])
+                        res = s["result"]
+                        if isinstance(res, dict) and "rows" in res:
+                            st.dataframe(pd.DataFrame(res["rows"], columns=res["columns"]), hide_index=True)
+                        elif isinstance(res, dict) and "tables" not in res:
+                            st.json(res)
+    if not chat:
+        st.markdown('<div class="limits"><b>What it can do:</b> look up and calculate anything in the published '
+                    'result tables (bands, policy outcomes, model metrics, segments, monitoring, data cleaning) and '
+                    'score a made-up applicant with the live model.<br><b>What it can\'t do:</b> see any loan '
+                    'records, change data or answer questions the tables don\'t cover; it should say so instead.'
+                    '</div>', unsafe_allow_html=True)
+
+
+# ================================================================ 6. about
 else:
     audit = table("population_audit").set_index("step")["loans"]
     heading("Behind the scenes", "From a raw loan file to <em>a lending decision</em>",

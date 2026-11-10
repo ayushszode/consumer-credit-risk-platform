@@ -14,7 +14,8 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "app" / "streamlit_app.py"
-PAGES = ["Score an applicant", "Compare the models", "Lending policy", "Monitoring", "About the project"]
+PAGES = ["Score an applicant", "Compare the models", "Lending policy", "Monitoring", "Ask the data",
+         "About the project"]
 
 needs_results = pytest.mark.skipif(
     not (ROOT / "artifacts" / "model_bundle.joblib").exists() or not (ROOT / "reports" / "results" / "summary.json").exists(),
@@ -71,3 +72,13 @@ def test_policy_cutoff_slider():
     for value in (5, 20, 35):
         at.slider(key="cutoff").set_value(value).run()
         no_problems(at, f"cut-off {value}")
+
+
+@needs_results
+def test_ask_page_without_a_key_explains_how_to_switch_it_on():
+    at = started_app()
+    at.sidebar.radio[0].set_value("Ask the data").run()
+    no_problems(at, "ask page")
+    at.button(key="ask_ex_0").click().run()
+    no_problems(at, "ask without key")
+    assert any("GEMINI_API_KEY" in i.value for i in at.info)

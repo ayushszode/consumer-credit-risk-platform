@@ -1,4 +1,4 @@
-.PHONY: setup setup-extras demo run run-spark sample test api app clean
+.PHONY: setup setup-extras demo run run-spark sample test api app agent-eval clean
 
 setup:            ## install everything into the current environment
 	pip install -r requirements.txt -r requirements-dev.txt
@@ -27,6 +27,9 @@ api:
 
 app:
 	streamlit run app/streamlit_app.py
+
+agent-eval:       ## evaluate the AI assistant on 30 questions (needs GEMINI_API_KEY)
+	python -m credit_risk.agent_eval
 
 clean:
 	rm -rf artifacts/*.joblib reports/results/* reports/figures/* data/processed/*

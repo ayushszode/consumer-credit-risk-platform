@@ -12,7 +12,9 @@ End-to-end consumer credit risk project using **Python, SQL and scikit-learn** o
 loan data. It goes from a raw loan file to a lending decision: an explainable scorecard, a challenger
 model, approve / refer / decline cut-offs, expected loss, monitoring, and a small API and app to score
 one applicant at a time. The data preparation can also run in **PySpark** (for example on Databricks), and **XGBoost**
-and a **PyTorch** network can be tested as extra challengers on the same loans.
+and a **PyTorch** network can be tested as extra challengers on the same loans. An **AI assistant** in the app answers
+plain-English questions about the results by writing read-only SQL and calling the live model, with guardrails and a
+30-question evaluation ([details](docs/ask_the_credit_desk.md)).
 
 ## Business objective
 
@@ -169,6 +171,23 @@ Each decision comes with a plain-English reason built from a template, for examp
 An optional language-model rewrite is off by default. If it changes a number, the outcome, or
 mentions a protected topic, it is thrown away and the template is used.
 
+### AI assistant: Ask the Credit Desk
+
+The app's **Ask the data** page lets you ask questions in plain English ("Which loan purpose had the
+highest bad rate in 2015?"). A language model (Gemini, through function calling) answers by calling four
+tools: list the result tables, run one read-only SQL query, read the headline metrics, or score a
+made-up applicant with the same function the API uses. Every query it ran is shown.
+
+- **Guardrails:** no loan records, only the published result tables; SQL is checked as text *and* the
+  SQLite database refuses anything except reading; at most 50 rows and 6 tool rounds.
+- **Grounding check:** any number in the answer that can't be traced to a tool result is flagged.
+- **Evaluation:** 30 questions (numbers, categories, questions it should refuse, attempts to change
+  data, and scoring) whose correct answers are computed by SQL, never typed in. Run with
+  `make agent-eval`; results go to `reports/agent_evaluation.md`.
+
+It needs a free Gemini API key, kept in Streamlit secrets and never committed. Details and set-up:
+[`docs/ask_the_credit_desk.md`](docs/ask_the_credit_desk.md).
+
 ## Repository structure
 
 ```text
@@ -190,12 +209,15 @@ consumer-credit-risk-platform/
 │   ├── scorecard.py  models.py  challengers.py  evaluate.py
 │   ├── policy.py  pricing.py  monitoring.py  experiment.py
 │   ├── explain.py  service.py  figures.py
+│   ├── agent.py  agent_eval.py    # AI assistant: tools, guardrails, evaluation
 │   ├── synthetic.py               # fake loans for tests and the demo
 │   └── pipeline.py                # runs everything
 ├── api/
 │   └── main.py                    # FastAPI: /health, /score
 ├── app/
-│   └── streamlit_app.py           # 5-page interactive app (Plotly charts)
+│   └── streamlit_app.py           # 6-page interactive app (Plotly charts, AI assistant)
+├── evals/
+│   └── agent_questions.yaml       # 30 evaluation questions for the AI assistant
 ├── notebooks/
 │   └── databricks_full_run.py     # full run on Databricks: Spark prep + all models
 ├── tests/                         # 52 tests, no real loan data needed
@@ -211,7 +233,7 @@ consumer-credit-risk-platform/
 ├── docs/
 │   ├── case_study.md  interview_guide.md  data_dictionary.md
 │   ├── linkedin_entry.md  cv_bullets.md  github_setup.md
-│   ├── databricks_guide.md  github_full_run.md
+│   ├── databricks_guide.md  github_full_run.md  ask_the_credit_desk.md
 ├── data/
 │   ├── README.md
 │   ├── raw/                       # downloaded locally; excluded from Git
@@ -292,7 +314,8 @@ See [`START_HERE.md`](START_HERE.md) for the same steps one at a time.
 
 **Credit Risk | Scorecards | Python | SQL | DuckDB | PySpark | Databricks | scikit-learn | XGBoost |
 PyTorch | Logistic Regression | Gradient Boosting | Model Validation | Calibration | Monitoring (PSI) |
-Expected Loss | FastAPI | Streamlit | Testing | GitHub Actions**
+Expected Loss | LLM Agents | Function Calling | LLM Evaluation | FastAPI | Streamlit | Testing |
+GitHub Actions**
 
 ---
 
