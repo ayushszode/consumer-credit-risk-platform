@@ -3,6 +3,8 @@ name: agent evaluation
 # Runs the 30-question evaluation of "Ask the Credit Desk" against a real model.
 # Needs a repository secret named GEMINI_API_KEY (Settings > Secrets and variables > Actions).
 on:
+  push:
+    branches: ["eval/**"]        # pushing an eval/... branch also starts a run
   workflow_dispatch:
     inputs:
       model:
@@ -31,7 +33,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           if [ -z "$GEMINI_API_KEY" ]; then echo "Add a GEMINI_API_KEY repository secret first."; exit 1; fi
-          python -m credit_risk.agent_eval --model "${{ inputs.model }}" --sleep 6
+          python -m credit_risk.agent_eval --model "${{ inputs.model || 'gemini-2.5-flash' }}" --sleep 6
           cat reports/agent_evaluation.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
@@ -44,5 +46,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reports/agent_evaluation.md reports/results/agent_eval.csv
-          git commit -m "Agent evaluation results (${{ inputs.model }})" || echo "Nothing new to commit."
+          git commit -m "Agent evaluation results (${{ inputs.model || 'gemini-2.5-flash' }})" || echo "Nothing new to commit."
           git push

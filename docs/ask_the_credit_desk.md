@@ -84,13 +84,18 @@ the grading code.
      GEMINI_API_KEY = "your-key"
      ```
    - Streamlit Community Cloud: app → *Settings* → *Secrets*, same line as above.
-   - evaluation workflow: GitHub repo → *Settings* → *Secrets and variables* → *Actions* →
-     *New repository secret* named `GEMINI_API_KEY`.
+   - evaluation workflow (the only place the public project needs it): GitHub repo → *Settings* →
+     *Secrets and variables* → *Actions* → *New repository secret* named `GEMINI_API_KEY`.
 3. Optional: `GEMINI_MODEL` (default `gemini-2.5-flash`) if you want a different model name from
    AI Studio's list.
 
-Without a key, the page explains how to switch the assistant on and the rest of the app works as before.
-The public demo allows 12 questions per visit to protect the free quota.
+**Live or demo mode.** With `GEMINI_API_KEY` in the app's secrets, visitors can type their own
+questions (12 per visit, to protect the quota). Without it, the page runs in **demo mode**: it shows
+the real answers, verdicts and SQL from the last evaluation run (`reports/results/agent_eval.csv`), so
+nobody can use up the key. The public demo runs in demo mode.
+
+The evaluation workflow starts when it is run from the Actions tab or when a branch named `eval/...`
+is pushed, and commits its results back to that branch.
 
 ## Limitations
 

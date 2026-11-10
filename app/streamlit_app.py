@@ -677,64 +677,88 @@ elif page == PAGES[4]:
         return CreditDeskTools(ResultsDB(RESULTS), lambda a: score_applicant(bundle, a))
 
     api_key = secret("GEMINI_API_KEY")
-    chat = st.session_state.setdefault("chat", [])
-    limit = 12  # questions per visit, to protect the free API quota of the public demo
-    examples = ["What share of 2015 applicants would the policy approve, and what is their bad rate?",
-                "Which loan purpose had the highest bad rate in 2015?",
-                "How much better was gradient boosting than the scorecard on the test year?",
-                "Score an applicant with a credit score of 690, income of 42,000 and a 15,000 loan."]
-    cols = st.columns(len(examples))
-    asked = None
-    for i, (col, ex) in enumerate(zip(cols, examples)):
-        if col.button(ex, key=f"ask_ex_{i}", width="stretch"):
-            asked = ex
-    typed = st.chat_input("Ask about the results, e.g. 'What is the bad rate in risk band E?'", key="ask_input")
-    asked = typed or asked
+    eval_path = RESULTS / "agent_eval.csv"
 
-    if asked:
-        if not api_key:
-            st.info("The assistant needs a Gemini API key, which isn't set for this copy of the app. Add "
-                    "`GEMINI_API_KEY` to the app's secrets (see docs/ask_the_credit_desk.md) to switch it on.")
-        elif len(chat) >= limit:
-            st.warning(f"That's the limit of {limit} questions for this visit.")
-        else:
-            with st.spinner("Querying the results..."):
-                client = GeminiClient(api_key=api_key, model=secret("GEMINI_MODEL"))
-                chat.append(run_agent(asked, client, desk_tools()).to_dict())
-
-    for turn in reversed(chat):
+    def show_turn(question: str, answer: str, caption: str, steps: list[dict]) -> None:
         with st.chat_message("user"):
-            st.write(turn["question"])
+            st.write(question)
         with st.chat_message("assistant"):
-            st.write(turn["answer"])
-            if turn["error"]:
-                st.caption(f"Error: {turn['error']}")
-            elif turn["grounded"]:
-                st.caption(f"✓ Every number traced to a tool result · {len(turn['steps'])} tool calls · "
-                           f"{turn['seconds']} s")
-            else:
-                st.caption("⚠ Check this answer: " + (
-                    "it hit the step limit." if turn["stopped"] else
-                    "these numbers were not found in any tool result: " + ", ".join(turn["unverified_numbers"])))
-            if turn["steps"]:
+            st.write(answer)
+            st.caption(caption)
+            if steps:
                 with st.expander("How I got this"):
-                    for s in turn["steps"]:
+                    for s in steps:
                         st.markdown(f"**{s['tool']}**")
                         if s["tool"] == "run_sql":
                             st.code(s["args"].get("query", ""), language="sql")
-                        elif s["args"]:
+                        elif s.get("args"):
                             st.json(s["args"])
-                        res = s["result"]
+                        res = s.get("result")
                         if isinstance(res, dict) and "rows" in res:
                             st.dataframe(pd.DataFrame(res["rows"], columns=res["columns"]), hide_index=True)
                         elif isinstance(res, dict) and "tables" not in res:
                             st.json(res)
-    if not chat:
-        st.markdown('<div class="limits"><b>What it can do:</b> look up and calculate anything in the published '
-                    'result tables (bands, policy outcomes, model metrics, segments, monitoring, data cleaning) and '
-                    'score a made-up applicant with the live model.<br><b>What it can\'t do:</b> see any loan '
-                    'records, change data or answer questions the tables don\'t cover; it should say so instead.'
-                    '</div>', unsafe_allow_html=True)
+
+    if api_key:  # live mode: only when a key is set in this copy's secrets
+        chat = st.session_state.setdefault("chat", [])
+        limit = 12  # questions per visit, to protect the API quota
+        examples = ["What share of 2015 applicants would the policy approve, and what is their bad rate?",
+                    "Which loan purpose had the highest bad rate in 2015?",
+                    "How much better was gradient boosting than the scorecard on the test year?",
+                    "Score an applicant with a credit score of 690, income of 42,000 and a 15,000 loan."]
+        asked = None
+        for i, (col, ex) in enumerate(zip(st.columns(len(examples)), examples)):
+            if col.button(ex, key=f"ask_ex_{i}", width="stretch"):
+                asked = ex
+        asked = st.chat_input("Ask about the results, e.g. 'What is the bad rate in risk band E?'",
+                              key="ask_input") or asked
+        if asked:
+            if len(chat) >= limit:
+                st.warning(f"That's the limit of {limit} questions for this visit.")
+            else:
+                with st.spinner("Querying the results..."):
+                    client = GeminiClient(api_key=api_key, model=secret("GEMINI_MODEL"))
+                    chat.append(run_agent(asked, client, desk_tools()).to_dict())
+        for turn in reversed(chat):
+            if turn["error"]:
+                cap = f"Error: {turn['error']}"
+            elif turn["grounded"]:
+                cap = f"✓ Every number traced to a tool result · {len(turn['steps'])} tool calls · {turn['seconds']} s"
+            elif turn["stopped"]:
+                cap = "⚠ Check this answer: it hit the step limit."
+            else:
+                cap = "⚠ Check this answer: not found in any tool result: " + ", ".join(turn["unverified_numbers"])
+            show_turn(turn["question"], turn["answer"], cap, turn["steps"])
+
+    elif eval_path.exists():  # demo mode: real answers recorded during the evaluation run
+        ev = pd.read_csv(eval_path).fillna("")
+        st.info("Demo mode: these are real answers the assistant gave during its last evaluation run, with the "
+                "SQL it wrote. Live questions are switched off on the public app to protect the API quota.")
+        kpis([("Correct", f"{int(ev['passed'].sum())} / {len(ev)}", "graded against SQL-computed answers", "green"),
+              ("Grounded", f"{int(ev['grounded'].sum())} / {len(ev)}", "every number traced to a tool", "slate"),
+              ("Tool calls", f"{ev['tool_calls'].mean():.1f}", "average per question", "gold"),
+              ("Blocked queries", f"{int(ev['rejected_queries'].sum())}", "stopped by the guardrails", "coral")])
+        st.write("")
+        choice = st.selectbox("Pick a question from the evaluation run", ev["question"].tolist(), key="ask_pick")
+        row = ev[ev["question"] == choice].iloc[0]
+        steps = [{"tool": "run_sql", "args": {"query": q.strip()}} for q in str(row["sql"]).split(" | ") if q.strip()]
+        verdict = "✓ correct" if bool(row["passed"]) else f"✗ wrong ({row['why_failed']})"
+        ground = "every number traced to a tool result" if bool(row["grounded"]) else \
+            f"unverified numbers: {row['unverified_numbers']}"
+        show_turn(row["question"], row["answer"], f"{verdict} · {ground} · {int(row['tool_calls'])} tool calls", steps)
+        with st.expander("All 30 questions and how it did"):
+            st.dataframe(ev[["id", "type", "question", "passed", "grounded", "tool_calls"]], hide_index=True)
+
+    else:
+        st.info("The assistant needs a Gemini API key, which isn't set for this copy of the app. Add "
+                "`GEMINI_API_KEY` to the app's secrets (see docs/ask_the_credit_desk.md) to switch it on. "
+                "Recorded answers from the evaluation run will appear here once it has been run.")
+
+    st.markdown('<div class="limits"><b>What it can do:</b> look up and calculate anything in the published '
+                'result tables (bands, policy outcomes, model metrics, segments, monitoring, data cleaning) and '
+                'score a made-up applicant with the live model.<br><b>What it can\'t do:</b> see any loan '
+                'records, change data or answer questions the tables don\'t cover; it should say so instead.'
+                '</div>', unsafe_allow_html=True)
 
 
 # ================================================================ 6. about

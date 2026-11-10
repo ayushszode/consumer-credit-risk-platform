@@ -75,10 +75,14 @@ def test_policy_cutoff_slider():
 
 
 @needs_results
-def test_ask_page_without_a_key_explains_how_to_switch_it_on():
+def test_ask_page_without_a_key_shows_demo_or_explains():
     at = started_app()
     at.sidebar.radio[0].set_value("Ask the data").run()
     no_problems(at, "ask page")
-    at.button(key="ask_ex_0").click().run()
-    no_problems(at, "ask without key")
-    assert any("GEMINI_API_KEY" in i.value for i in at.info)
+    if (ROOT / "reports" / "results" / "agent_eval.csv").exists():
+        pick = at.selectbox(key="ask_pick")
+        pick.set_value(pick.options[-1]).run()
+        no_problems(at, "demo mode")
+        assert at.chat_message
+    else:
+        assert any("GEMINI_API_KEY" in i.value for i in at.info)

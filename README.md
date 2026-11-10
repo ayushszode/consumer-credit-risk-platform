@@ -185,7 +185,8 @@ made-up applicant with the same function the API uses. Every query it ran is sho
   data, and scoring) whose correct answers are computed by SQL, never typed in. Run with
   `make agent-eval`; results go to `reports/agent_evaluation.md`.
 
-It needs a free Gemini API key, kept in Streamlit secrets and never committed. Details and set-up:
+It needs a free Gemini API key, kept as a secret and never committed. The public app runs in **demo
+mode**, showing the real answers and SQL from the evaluation run. Details and set-up:
 [`docs/ask_the_credit_desk.md`](docs/ask_the_credit_desk.md).
 
 ## Repository structure
