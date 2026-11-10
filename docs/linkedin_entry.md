@@ -10,9 +10,11 @@ Built an end-to-end consumer credit risk project on public LendingClub loan data
 
 Built an explainable weight-of-evidence scorecard and a gradient boosting challenger, choosing between them with a rule set in advance. On 589,249 loans, boosting reached a 2015 test AUC of 0.682 (scorecard 0.665). At a 12% PD cut-off, 52% of 2015 loans would be approved automatically with an 8.5% bad rate and 3.71% expected loss. Added risk bands, PSI monitoring and a FastAPI service.
 
-The live interactive app lets you score your own applicant: it shows the decision, a risk dial, plain-English reasons and how the risk changes with the credit score, plus a cut-off slider for the lending policy. 52 automated tests run on GitHub Actions.
+The live interactive app lets you score your own applicant: it shows the decision, a risk dial, plain-English reasons and how the risk changes with the credit score, plus a cut-off slider for the lending policy. 98 automated tests run on GitHub Actions.
 
-**Tools:** Python | SQL | DuckDB | PySpark | pandas | scikit-learn | FastAPI | Streamlit | Plotly | pytest | GitHub Actions
+Added an AI assistant, "Ask the Credit Desk": a language model (Gemini, function calling) answers plain-English questions about the results by writing read-only SQL and calling the scoring API. Every query is shown, the database refuses anything except reading, and any number that can't be traced back to the data is flagged. On a 30-question evaluation with answers computed by SQL, it got 30 out of 30 right.
+
+**Tools:** Python | SQL | DuckDB | PySpark | pandas | scikit-learn | FastAPI | Streamlit | Plotly | Gemini API | pytest | GitHub Actions
 
 **Media:** the live app link, with `images/app_demo.png` as its thumbnail.
 
@@ -28,6 +30,8 @@ The live interactive app lets you score your own applicant: it shows the decisio
 - Model Validation
 - Statistical Modelling
 - Data Analysis
+- Large Language Models (LLM)
+- Generative AI
 
 ## Post
 

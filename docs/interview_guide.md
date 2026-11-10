@@ -152,3 +152,35 @@ model identification, governance, development, independent validation and risk m
 Consumer Duty is about good customer outcomes, including clear explanations and fair value. I mapped
 the project against both in `reports/governance_mapping.md`, including what is missing, such as
 independent validation and an affordability check.
+
+## Tell me about the AI assistant.
+
+It answers plain-English questions about the results ("What share of 2015 applicants would the
+policy approve?"). The language model doesn't know the answers. It decides which tool to call: list
+the tables, run one read-only SQL query, read the headline numbers, or score an applicant with the
+same function the API uses. It gets the results back and writes the answer, and the app shows every
+query it ran.
+
+## How do you stop it changing data or inventing numbers?
+
+Two layers for data. The SQL text is checked first: one statement, SELECT or WITH only. Then the
+tables sit in an in-memory SQLite database with an authorizer that refuses anything except reading,
+so even a query that got past the text check can't change anything. There's also a 50-row limit, an
+operation budget for runaway queries and at most 6 tool rounds. It never sees loan records, only the
+aggregate result tables.
+
+For numbers, every number in the answer has to appear in a tool result, allowing for rounding and for
+fractions written as percentages. If one doesn't, the answer is flagged. That catches invented
+numbers, not misleading wording, so it's a guardrail, not a guarantee.
+
+## How did you know it was any good?
+
+I wrote 30 test questions of five kinds: numbers, categories, questions the tables can't answer,
+requests to delete data, and scoring an applicant. The correct answers aren't typed in; each one is
+computed by SQL from the same tables, so the test stays right if the results change. The first run got
+28 out of 30: one was a real rounding mistake by the model (17.65% written as 17.6%) and one was a bug
+in my grading code. After fixing those and one more grading bug, it got 30 out of 30.
+
+The honest caveat is that I adjusted the prompt after seeing results on the same 30 questions, so a
+fresh held-out set would be the real test.
+
