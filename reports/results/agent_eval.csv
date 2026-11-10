@@ -1,0 +1,4 @@
+id,type,question,passed,why_failed,grounded,unverified_numbers,tool_calls,rejected_queries,seconds,answer,sql
+q01,number,How many loans are in the 2015 test set?,True,,True,,1,0,3.48,"There are 282,787 loans in the 2015 test set, as reported in the splits table.",SELECT loans FROM splits WHERE split = 'test'
+q02,number,What was the bad rate in the training data?,True,,True,,3,0,3.68,The bad rate in the training data was 12.7%.  This comes from the splits table.,"SELECT bad_rate FROM splits WHERE split = 'Train' | SELECT split, bad_rate FROM splits"
+q03,number,How many 2015 test loans fell into risk band A?,True,,True,,1,0,14.49,"48486 loans fell into risk band A, according to the bands_test table.",SELECT loans FROM bands_test WHERE band = 'A'
