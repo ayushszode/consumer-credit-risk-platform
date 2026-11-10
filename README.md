@@ -220,7 +220,7 @@ consumer-credit-risk-platform/
 │   └── agent_questions.yaml       # 30 evaluation questions for the AI assistant
 ├── notebooks/
 │   └── databricks_full_run.py     # full run on Databricks: Spark prep + all models
-├── tests/                         # 52 tests, no real loan data needed
+├── tests/                         # 92 tests, no real loan data needed
 ├── examples/
 │   └── applicant.json
 ├── reports/
@@ -247,7 +247,7 @@ consumer-credit-risk-platform/
 conda create -n credit-risk python=3.12 -y
 conda activate credit-risk
 make setup        # install requirements and the package
-make test         # 52 tests, synthetic data (5 skip without the extras below)
+make test         # 92 tests, synthetic data (5 skip without the extras below)
 make demo         # whole pipeline on synthetic data, under a minute (overwrites reports/ and the model)
 ```
 
